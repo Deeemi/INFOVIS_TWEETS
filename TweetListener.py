@@ -3,10 +3,10 @@ from tweepy.streaming import StreamListener
 from tweepy import OAuthHandler, Stream
 import socket,json
 
-access_token = "877162020013035521-zFG8dwpRtdXpOooZ9A681bKMYXybeiQ"
-access_secret = "dlEqfUljPSmQZGhXwP7dlE86HXP3bNPYq7LZ4HCqa0dDu"
-consumer_key = "gjNMOU1jn0kuTcZqzMJx5u4r7"
-consumer_secret = "vVrbcdzd8yFha3NhpvJ3AuwYFzslvZLhi2elCoOBsPydF05Dys"
+access_token = "479635577-RggBMFaIFh9HkbC5JMwNj1KsnWbaYvJusrzNEYvT"
+access_secret = "RD58EwiM6uxbNnq1cOxDxr06emV0HuimoGDgw40zFPYIX"
+consumer_key = "gS7DkeN3SlL6DtG4XR3e5rWnb"
+consumer_secret = "cPCT9xJhQYJh2gRaAqu5K2V7bZERkfv3t2TcZpadswO9sRzoxN"
 
 # Classe che ascolta i Tweet
 class TweetsListener (StreamListener):
