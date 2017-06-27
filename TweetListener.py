@@ -33,19 +33,16 @@ def sendData(c_socket):
     auth.set_access_token(access_token,access_secret)
     twitter_stream = Stream(auth,TweetsListener(c_socket))
 
-    #controllare coem fare filter sulla lingua
-    twitter_stream.filter(languages=['en'], track=['#trump'])
+    twitter_stream.filter(track=['#NowPlaying'])
 
 if __name__ == "__main__":
     s = socket.socket()
-    host = socket.gethostbyname(socket.gethostname())
-    port = 5555
+    # host = socket.gethostbyname(socket.gethostname())   #DAVIDE: 10.25.159.249
+    host = "127.0.0.1"
+    port = 9000
     s.bind((host,port))
     print ("Listening on port : %s" % str(port))
     s.listen(5)
     c,addr = s.accept()
     print("Received request from: "+str(addr))
     sendData(c)
-
-
-
