@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>prova html</title>
+</head>
+<body>
+	<div><button type="button" onclick="getTweets()">Listen</button></div>
+	<div><button id="stop" type="button">Stop</button></div>
+</body>
+<script type="text/javascript">
+
+	function getTweets() {
+
+		var connection = new WebSocket('ws://127.0.0.1:9000');
+		var buttonStop = document.getElementById("stop");
+
+		buttonStop.onclick = function() {
+			if (connection.readyState === WebSocket.OPEN) {
+      			connection.close();
+   			}
+		}
+
+		connection.onopen = function() {
+			connection.send('Request tweets');
+		}
+
+		connection.onerror = function(error) {
+			console.log('Error: ' + error);
+		}
+
+		connection.onmessage = function(e) {
+			console.log('Tweet: ' + e.data);
+		}
+
+		connection.onclose = function() {
+			console.log('connessione chiusa');
+		}
+	}
+
+</script>
+</html>

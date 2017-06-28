@@ -1,12 +1,14 @@
 
 from tweepy.streaming import StreamListener
 from tweepy import OAuthHandler, Stream
-import socket,json
+import socket,json,re
+from base64 import b64encode
+from hashlib import sha1
 
-access_token = ""
-access_secret = ""
-consumer_key = ""
-consumer_secret = ""
+access_token = "479635577-RggBMFaIFh9HkbC5JMwNj1KsnWbaYvJusrzNEYvT"
+access_secret = "RD58EwiM6uxbNnq1cOxDxr06emV0HuimoGDgw40zFPYIX"
+consumer_key = "gS7DkeN3SlL6DtG4XR3e5rWnb"
+consumer_secret = "cPCT9xJhQYJh2gRaAqu5K2V7bZERkfv3t2TcZpadswO9sRzoxN"
 
 # Classe che ascolta i Tweet
 class TweetsListener (StreamListener):
@@ -35,8 +37,20 @@ def sendData(c_socket):
 
     twitter_stream.filter(track=['#NowPlaying'])
 
+
+websocket_answer = (
+    'HTTP/1.1 101 Switching Protocols',
+    'Upgrade: websocket',
+    'Connection: Upgrade',
+    'Sec-WebSocket-Accept: {key}\r\n\r\n',
+)
+
+
+GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+
+
 if __name__ == "__main__":
-    s = socket.socket()
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # host = socket.gethostbyname(socket.gethostname())   #DAVIDE: 10.25.159.249
     host = "127.0.0.1"
     port = 9000
@@ -44,5 +58,16 @@ if __name__ == "__main__":
     print ("Listening on port : %s" % str(port))
     s.listen(5)
     c,addr = s.accept()
+    text = c.recv(1024)
     print("Received request from: "+str(addr))
+    
+    key = (re.search('Sec-WebSocket-Key:\s+(.*?)[\n\r]+', text)
+    .groups()[0]
+    .strip())
+
+    response_key = b64encode(sha1(key + GUID).digest())
+    response = '\r\n'.join(websocket_answer).format(key=response_key)
+
+    c.send(response)
+
     sendData(c)
