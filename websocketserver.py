@@ -1,4 +1,5 @@
 import json
+from collections import defaultdict
 from tornado import httpserver,websocket,ioloop,web
 from tweepy.streaming import StreamListener
 from tweepy import OAuthHandler, Stream
@@ -8,22 +9,22 @@ from tweepy import OAuthHandler, Stream
 class WSHandler(websocket.WebSocketHandler):
 
     def open(self):
-        print 'new connection'
+        print 'In ascolto di tweet'
       
     def on_message(self, message):
         if message=='Start':
-            access_token = ""
-            access_token_secret = ""
-            consumer_key = ""
-            consumer_secret = ""
+            access_token = "479635577-RggBMFaIFh9HkbC5JMwNj1KsnWbaYvJusrzNEYvT"
+            access_token_secret = "RD58EwiM6uxbNnq1cOxDxr06emV0HuimoGDgw40zFPYIX"
+            consumer_key = "gS7DkeN3SlL6DtG4XR3e5rWnb"
+            consumer_secret = "cPCT9xJhQYJh2gRaAqu5K2V7bZERkfv3t2TcZpadswO9sRzoxN"
 
             auth = OAuthHandler(consumer_key, consumer_secret)
             auth.set_access_token(access_token, access_token_secret)
             stream = Stream(auth, TweetsListener(self)) 
-            stream.filter(track=['#NowPlaying'],async=True)
+            stream.filter(track=['#trump','#apple'],async=True)
  
     def on_close(self):
-        print 'connection closed'
+        print 'Connessione chiusa'
  
     def check_origin(self, origin):
         return True
@@ -32,6 +33,7 @@ class WSHandler(websocket.WebSocketHandler):
 application = web.Application([
     (r'/ws', WSHandler),
 ])
+
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
@@ -40,12 +42,24 @@ class TweetsListener(StreamListener):
 
     def __init__(self,ws):
         self.ws = ws
+        self.counts = {'trump': defaultdict(int),
+                       'apple': defaultdict(int),
+                      }
 
     def on_data(self, data):
         try:
             msg = json.loads(data)
-            print(msg['text'].encode('utf-8'))
-            self.ws.write_message(msg['text'].encode('utf-8'))
+            hashtags = msg['entities']['hashtags']
+            print(hashtags)
+            mainhashtag = ''
+            for hashtag in hashtags:
+                if hashtag['text'].lower() in ['trump','apple']:
+                    mainhashtag = hashtag['text'].lower()
+                    break
+            for hashtag in hashtags:
+                if hashtag['text'].lower() != mainhashtag:
+                    self.counts[mainhashtag][hashtag['text'].lower()] += 1
+            self.ws.write_message(self.counts)
             return True
         except BaseException as e:
             return False
@@ -53,6 +67,7 @@ class TweetsListener(StreamListener):
     def on_error(self, status):
         print(status)
         return True
+
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
@@ -64,4 +79,5 @@ if __name__ == "__main__":
     myIP = '127.0.0.1'
     print('*** Websocket Server in ascolto su '+myIP+':'+str(port)+'***')
     ioloop.IOLoop.instance().start()
+
 # ---------------------------------------------------------------------------

@@ -1,41 +1,169 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-	<title>prova html</title>
+	<title>Visual tweet trends</title>
+	<script src="http://d3js.org/d3.v3.min.js"></script>
 </head>
+
 <body>
+	<section id="chart"></section>
 	<div><button id="start" type="button" onclick="getTweets()">Listen</button></div>
 	<div><button id="stop" type="button">Stop</button></div>
 </body>
+
 <script type="text/javascript">
 
+	var level = 'root';
+
+	var diameter = 600; //massimo diametro e' 600
+
+	var svg = d3.select('#chart').append('svg')
+	   			.attr('width', diameter)
+	   			.attr('height', diameter);
+
+	var bubble = d3.layout.pack()
+	   			   .size([diameter, diameter])
+	   			   .value(function(d) {return d.size;}) //i nuovi dati vengono caricati nel layout a bolla
+	   			   .padding(3); 						//si tiene un piccolo padding intorno alle bolle
+	
+	var div = d3.select("section").append("div")	
+    			.attr("class", "tooltip")				
+    			.style("opacity", 0);
+
+	//funzione per rendere il dizionario del server nel formato richiesto da d3
+	function processData(data,level) {
+
+		data = JSON.parse(data)
+
+	    var newDataSet = [];
+
+	    if(level === 'root') {
+	    	for(var mainhashtag in data) {
+	    		var sum = 0;
+	    		for(var hashtag in data[mainhashtag]) {
+	    			sum += data[mainhashtag][hashtag]
+	    		}
+	    		newDataSet.push({name: mainhashtag, className: mainhashtag, size: sum});
+	    	}
+	    }
+	    
+
+	    return {children: newDataSet};
+	}
+
+	//funzione principale
 	function getTweets() {
 
+		//connessione al websocket server
 		var connection = new WebSocket('ws://127.0.0.1:9000/ws');
 		var buttonStop = document.getElementById("stop");
 
+		//chiudi la connessione con il server quando si clicca su stop
 		buttonStop.onclick = function() {
 			if (connection.readyState === WebSocket.OPEN) {
       			connection.close();
    			}
 		}
 
+		//appena si apre la connessione con il server, il client invia il messaggio Start
 		connection.onopen = function() {
 			connection.send('Start')
 		}
 
+		//visualizzazione su console di eventuali errori
 		connection.onerror = function(error) {
 			console.log('Error: ' + error);
 		}
 
+		//funzione che reagisce ai messaggi che il server invia al client
 		connection.onmessage = function(e) {
-			console.log('Tweet: ' + e.data);
+
+			console.log(e.data)
+
+			var nodes = bubble.nodes(processData(e.data,level))
+		   					  .filter(function(d) { return !d.children; });
+
+			var vis = svg.selectAll('circle')
+		   				 .data(nodes, function(d) { return d.name; });
+
+			var duration = 200;
+			var delay = 0;
+
+			// update - questo si applica in fase di aggiornamento di nodi già esistenti
+			vis.transition()
+			   .duration(duration)
+			   .delay(function(d, i) {delay = i * 7; return delay;})
+			   .attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; })
+			   .attr('r', function(d) { return d.r; });
+			
+			// enter - questo si applica ai nuovi nodi in entrata
+			vis.enter().append('circle')
+			   .attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; })
+			   .attr('r', function(d) { return d.r; })
+			   .attr('class', function(d) { return d.className; })
+			   .style('opacity', 0)
+			   .on('mouseover', function(d) { 
+			   		div.transition()		
+	                   .duration(200)		
+	                   .style("opacity", .9);		
+	            	div.html("#"+d.name + "<br/>"  + d.size)	
+	                   .style("left", (d3.event.pageX) + "px")		
+	                   .style("top", (d3.event.pageY - 28) + "px");	
+	            })
+			   .on("mouseout", function(d) {		
+		            div.transition()		
+		                .duration(500)		
+		                .style("opacity", 0);	
+		        })
+			   .on('click', function(d) { 
+			   		d3.select(this).transition()
+			   		 .duration(500)
+			   		 .attr('r', 1000)
+			   		 .each('end', function() { 
+			   		 	d3.selectAll('circle')
+			   		 	.transition()
+			   			.duration(duration + delay)
+			   			.style('opacity', 0)
+			   			.each('end', function() {d3.select(this).remove();})
+			   		 	d3.selectAll('div.tooltip').remove();
+			   		 	});
+			    })
+			   .transition()
+			   .duration(duration * 1.2)
+			   .style('opacity', 1);
+
+			// exit - questo si applica ai nodi che dovranno scomparire
+			vis.exit()
+			   .transition()
+			   .duration(duration + delay)
+			   .style('opacity', 0)
+			   .remove();
 		}
 
+		//funzione che reagisce alla chiusura della connessione con il server
 		connection.onclose = function() {
 			console.log('connessione chiusa');
 		}
 	}
 
 </script>
+
+<style type="text/css">
+	.trump {fill: #FF6543;}
+
+	div.tooltip {	
+	    position: absolute;			
+	    text-align: center;			
+	    width: 60px;					
+	    height: 28px;					
+	    padding: 2px;				
+	    font: 12px sans-serif;		
+	    background: lightsteelblue;	
+	    border: 0px;		
+	    border-radius: 8px;			
+	    pointer-events: none;			
+	}
+</style>
+
 </html>
