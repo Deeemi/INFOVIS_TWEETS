@@ -10,11 +10,14 @@
 	<section id="chart"></section>
 	<div><button id="start" type="button" onclick="getTweets()">Listen</button></div>
 	<div><button id="stop" type="button">Stop</button></div>
+	<div><button id="back" type="button" onclick="goToRoot()">Back</button></div>
 </body>
 
 <script type="text/javascript">
 
 	var level = 'root';
+
+	var chart = '';
 
 	var diameter = 600; //massimo diametro e' 600
 
@@ -47,9 +50,90 @@
 	    		newDataSet.push({name: mainhashtag, className: mainhashtag, size: sum});
 	    	}
 	    }
-	    
+	    else {
+	    	for(var mainhashtag in data) {
+	    		if(mainhashtag === level) {
+	    			for(var hashtag in data[mainhashtag]) {
+	    				newDataSet.push({name: hashtag, className: mainhashtag, size: data[mainhashtag][hashtag]})
+	    			}
+	    		}
+	    	}
+	    }
 
 	    return {children: newDataSet};
+	}
+
+	function goToRoot() {
+		level = 'root';
+		duration = 200;
+		delay = 0;
+		d3.selectAll('circle')
+	 	  .transition()
+		  .duration(duration + delay)
+		  .style('opacity', 0)
+		  .each('end', function() {d3.select(this).remove();})
+	 	d3.selectAll('div.tooltip').remove();
+	 	drawBubbles(chart);
+	}
+
+	function drawBubbles(chart) {
+
+		var nodes = bubble.nodes(processData(chart,level))
+		   					  .filter(function(d) { return !d.children; });
+
+		var vis = svg.selectAll('circle')
+	   				 .data(nodes, function(d) { return d.name; });
+
+		var duration = 200;
+		var delay = 0;
+
+		// update - questo si applica in fase di aggiornamento di nodi già esistenti
+		vis.transition()
+		   .duration(duration)
+		   .delay(function(d, i) {delay = i * 7; return delay;})
+		   .attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; })
+		   .attr('r', function(d) { return d.r; })
+		   .style('opacity', 1);
+		
+		// enter - questo si applica ai nuovi nodi in entrata
+		vis.enter().append('circle')
+		   .attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; })
+		   .attr('r', function(d) { return d.r; })
+		   .attr('class', function(d) { return d.className; })
+		   .style('opacity', 0)
+		   .on('mouseover', function(d) { 
+		   		div.transition()		
+                   .duration(200)		
+                   .style("opacity", .9);		
+            	div.html("#"+d.name + "<br/>"  + d.size)	
+                   .style("left", (d3.event.pageX) + "px")		
+                   .style("top", (d3.event.pageY - 28) + "px");	
+            })
+		   .on("mouseout", function(d) {		
+	            div.transition()		
+	                .duration(500)		
+	                .style("opacity", 0);	
+	        })
+		   .on('click', function(d) {
+		   		level = d.name; 
+	   		 	d3.selectAll('circle')
+	   		 	  .transition()
+	   			  .duration(duration + delay)
+	   			  .style('opacity', 0)
+	   			  .each('end', function() {d3.select(this).remove();})
+	   		 	d3.selectAll('div.tooltip').remove();
+	   		 	drawBubbles(chart);
+		    })
+		   .transition()
+		   .duration(duration * 1.2)
+		   .style('opacity', 1);
+
+		// exit - questo si applica ai nodi che dovranno scomparire
+		vis.exit()
+		   .transition()
+		   .duration(duration + delay)
+		   .style('opacity', 0)
+		   .remove();
 	}
 
 	//funzione principale
@@ -78,67 +162,9 @@
 
 		//funzione che reagisce ai messaggi che il server invia al client
 		connection.onmessage = function(e) {
-
 			console.log(e.data)
-
-			var nodes = bubble.nodes(processData(e.data,level))
-		   					  .filter(function(d) { return !d.children; });
-
-			var vis = svg.selectAll('circle')
-		   				 .data(nodes, function(d) { return d.name; });
-
-			var duration = 200;
-			var delay = 0;
-
-			// update - questo si applica in fase di aggiornamento di nodi già esistenti
-			vis.transition()
-			   .duration(duration)
-			   .delay(function(d, i) {delay = i * 7; return delay;})
-			   .attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; })
-			   .attr('r', function(d) { return d.r; });
-			
-			// enter - questo si applica ai nuovi nodi in entrata
-			vis.enter().append('circle')
-			   .attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; })
-			   .attr('r', function(d) { return d.r; })
-			   .attr('class', function(d) { return d.className; })
-			   .style('opacity', 0)
-			   .on('mouseover', function(d) { 
-			   		div.transition()		
-	                   .duration(200)		
-	                   .style("opacity", .9);		
-	            	div.html("#"+d.name + "<br/>"  + d.size)	
-	                   .style("left", (d3.event.pageX) + "px")		
-	                   .style("top", (d3.event.pageY - 28) + "px");	
-	            })
-			   .on("mouseout", function(d) {		
-		            div.transition()		
-		                .duration(500)		
-		                .style("opacity", 0);	
-		        })
-			   .on('click', function(d) { 
-			   		d3.select(this).transition()
-			   		 .duration(500)
-			   		 .attr('r', 1000)
-			   		 .each('end', function() { 
-			   		 	d3.selectAll('circle')
-			   		 	.transition()
-			   			.duration(duration + delay)
-			   			.style('opacity', 0)
-			   			.each('end', function() {d3.select(this).remove();})
-			   		 	d3.selectAll('div.tooltip').remove();
-			   		 	});
-			    })
-			   .transition()
-			   .duration(duration * 1.2)
-			   .style('opacity', 1);
-
-			// exit - questo si applica ai nodi che dovranno scomparire
-			vis.exit()
-			   .transition()
-			   .duration(duration + delay)
-			   .style('opacity', 0)
-			   .remove();
+			chart = e.data;
+			drawBubbles(chart);
 		}
 
 		//funzione che reagisce alla chiusura della connessione con il server
@@ -150,7 +176,8 @@
 </script>
 
 <style type="text/css">
-	.trump {fill: #FF6543;}
+	.ps4 {fill: #0000D5;}
+	.xboxone {fill: #00C300;}
 
 	div.tooltip {	
 	    position: absolute;			

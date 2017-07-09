@@ -21,7 +21,7 @@ class WSHandler(websocket.WebSocketHandler):
             auth = OAuthHandler(consumer_key, consumer_secret)
             auth.set_access_token(access_token, access_token_secret)
             stream = Stream(auth, TweetsListener(self)) 
-            stream.filter(track=['#trump','#apple'],async=True)
+            stream.filter(track=['#ferrari'],async=True)
  
     def on_close(self):
         print 'Connessione chiusa'
@@ -42,8 +42,7 @@ class TweetsListener(StreamListener):
 
     def __init__(self,ws):
         self.ws = ws
-        self.counts = {'trump': defaultdict(int),
-                       'apple': defaultdict(int),
+        self.counts = {'ferrari': defaultdict(int)
                       }
 
     def on_data(self, data):
@@ -53,7 +52,7 @@ class TweetsListener(StreamListener):
             print(hashtags)
             mainhashtag = ''
             for hashtag in hashtags:
-                if hashtag['text'].lower() in ['trump','apple']:
+                if hashtag['text'].lower() in ['ferrari']:
                     mainhashtag = hashtag['text'].lower()
                     break
             for hashtag in hashtags:
