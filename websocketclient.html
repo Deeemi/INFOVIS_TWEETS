@@ -8,13 +8,16 @@
 
 <body>
 	<section id="chart"></section>
+	<section id="secondary_section"></section>
 	<div><button id="start" type="button" onclick="getTweets()">Listen</button></div>
 	<div><button id="stop" type="button">Stop</button></div>
 	<div><button id="back" type="button" onclick="goToRoot()">Back</button></div>
 </body>
 
 <script type="text/javascript">
-	var map_color = {amazon: '190,100%,85%',gameofthrones: '130,100%,85%',ferrari: '70,100%,85%'}
+
+	var map_color = {amazon: '190,100%,85%',gameofthrones: '130,100%,85%',ferrari: '15,100%,85%'}
+	
 	var level = 'root';
 
 	var chart = '';
@@ -76,8 +79,8 @@
 	 	  .transition()
 		  .duration(0)
 		  .style('opacity', 0);
+		d3.select('#level_name').remove();
 	 	drawBubbles(chart);
-
 
 	}
 
@@ -103,17 +106,12 @@
 		   	size = d.size; 
 		   	col = map_color[d.className];
 		   	color = col.split(',');
-		   	console.log('COLOR DI 2: '+color[2])
 		   	if (parseInt(color[2].substring(0, color[2].indexOf('%'))) - size <= 50){
 		   		color[2] = 80
 		   		color = color.toString()
-		   		console.log('SIZE : '+size);
-		   		console.log('Il colore : '+color);
 		   	}else{
 		   		color[2] = parseInt(color[2].substring(0, color[2].indexOf('%'))) - size;
 		   		color = color.toString();
-		   		console.log('SIZE : '+size);
-		   		console.log('Il colore : '+color);
 		   	}
 		   	return 'hsl('+color+'%)';
 		   });
@@ -149,6 +147,16 @@
 		   		 	  .transition()
 		   			  .duration(0)
 		   			  .style('opacity', 0);
+		   			d3.select('#secondary_section')
+		   			  .append('text')
+		   			  .attr('id','level_name')
+		   			  .style('color',function() {
+		   			  	color = map_color[d.className];
+		   			  	color = color.split(',');
+		   			  	color[2] = '50%';
+		   			  	return 'hsl('+color.toString()+')';
+		   			  })
+		   			  .text(d.name);
 		   		 	drawBubbles(chart);
 		   		 	
 		   		 }
@@ -162,13 +170,9 @@
 		   	if (parseInt(color[2].substring(0, color[2].indexOf('%'))) - size <= 50){
 		   		color[2] = 80
 		   		color = color.toString()
-		   		console.log('SIZE : '+size);
-		   		console.log('Il colore : '+color);
 		   	}else{
 		   		color[2] = parseInt(color[2].substring(0, color[2].indexOf('%'))) - size;
 		   		color = color.toString();
-		   		console.log('SIZE : '+size);
-		   		console.log('Il colore : '+color);
 		   	}
 		   	return 'hsl('+color+'%)';
 		   })
@@ -228,7 +232,7 @@
 	div.tooltip {	
 	    position: absolute;			
 	    text-align: center;			
-	    width: 60px;					
+	    width: 120px;					
 	    height: 28px;					
 	    padding: 2px;				
 	    font: 12px sans-serif;		
@@ -236,6 +240,14 @@
 	    border: 0px;		
 	    border-radius: 8px;			
 	    pointer-events: none;			
+	}
+
+	#chart{
+		float: left;
+	}
+
+	#secondary_section{
+		float: right;
 	}
 </style>
 
