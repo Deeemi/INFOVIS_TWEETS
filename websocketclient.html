@@ -14,7 +14,7 @@
 </body>
 
 <script type="text/javascript">
-
+	var map_color = {amazon: '190,100%,85%',gameofthrones: '130,100%,85%',ferrari: '70,100%,85%'}
 	var level = 'root';
 
 	var chart = '';
@@ -72,8 +72,13 @@
 		  .duration(duration + delay)
 		  .style('opacity', 0)
 		  .each('end', function() {d3.select(this).remove();})
-	 	d3.selectAll('div.tooltip').remove();
+	 	d3.selectAll('div.tooltip')
+	 	  .transition()
+		  .duration(0)
+		  .style('opacity', 0);
 	 	drawBubbles(chart);
+
+
 	}
 
 	function drawBubbles(chart) {
@@ -93,7 +98,25 @@
 		   .delay(function(d, i) {delay = i * 7; return delay;})
 		   .attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; })
 		   .attr('r', function(d) { return d.r; })
-		   .style('opacity', 1);
+		   .style('opacity', 1)
+		   .style('fill',function(d){ 
+		   	size = d.size; 
+		   	col = map_color[d.className];
+		   	color = col.split(',');
+		   	console.log('COLOR DI 2: '+color[2])
+		   	if (parseInt(color[2].substring(0, color[2].indexOf('%'))) - size <= 50){
+		   		color[2] = 80
+		   		color = color.toString()
+		   		console.log('SIZE : '+size);
+		   		console.log('Il colore : '+color);
+		   	}else{
+		   		color[2] = parseInt(color[2].substring(0, color[2].indexOf('%'))) - size;
+		   		color = color.toString();
+		   		console.log('SIZE : '+size);
+		   		console.log('Il colore : '+color);
+		   	}
+		   	return 'hsl('+color+'%)';
+		   });
 		
 		// enter - questo si applica ai nuovi nodi in entrata
 		vis.enter().append('circle')
@@ -103,7 +126,7 @@
 		   .style('opacity', 0)
 		   .on('mouseover', function(d) { 
 		   		div.transition()		
-                   .duration(200)		
+                   .duration(0)		
                    .style("opacity", .9);		
             	div.html("#"+d.name + "<br/>"  + d.size)	
                    .style("left", (d3.event.pageX) + "px")		
@@ -115,17 +138,40 @@
 	                .style("opacity", 0);	
 	        })
 		   .on('click', function(d) {
-		   		level = d.name; 
-	   		 	d3.selectAll('circle')
-	   		 	  .transition()
-	   			  .duration(duration + delay)
-	   			  .style('opacity', 0)
-	   			  .each('end', function() {d3.select(this).remove();})
-	   		 	d3.selectAll('div.tooltip').remove();
-	   		 	drawBubbles(chart);
+		   		if(level === 'root'){
+			   		level = d.name; 
+		   		 	d3.selectAll('circle')
+		   		 	  .transition()
+		   			  .duration(duration + delay)
+		   			  .style('opacity', 0)
+		   			  .each('start', function() {d3.select(this).remove();}) //end
+		   		 	d3.selectAll('div.tooltip')
+		   		 	  .transition()
+		   			  .duration(0)
+		   			  .style('opacity', 0);
+		   		 	drawBubbles(chart);
+		   		 	
+		   		 }
 		    })
 		   .transition()
 		   .duration(duration * 1.2)
+		   .style('fill',function(d){ 
+		   	size = d.size; 
+		   	col = map_color[d.className];
+		   	color = col.split(',');
+		   	if (parseInt(color[2].substring(0, color[2].indexOf('%'))) - size <= 50){
+		   		color[2] = 80
+		   		color = color.toString()
+		   		console.log('SIZE : '+size);
+		   		console.log('Il colore : '+color);
+		   	}else{
+		   		color[2] = parseInt(color[2].substring(0, color[2].indexOf('%'))) - size;
+		   		color = color.toString();
+		   		console.log('SIZE : '+size);
+		   		console.log('Il colore : '+color);
+		   	}
+		   	return 'hsl('+color+'%)';
+		   })
 		   .style('opacity', 1);
 
 		// exit - questo si applica ai nodi che dovranno scomparire
@@ -176,8 +222,8 @@
 </script>
 
 <style type="text/css">
-	.ps4 {fill: #0000D5;}
-	.xboxone {fill: #00C300;}
+	.gameofthrones {fill: hsl(0, 0%, 0%);}
+	.ferrari {fill: hsl(0, 0%, 0%);}
 
 	div.tooltip {	
 	    position: absolute;			
