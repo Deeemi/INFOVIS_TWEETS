@@ -11,11 +11,12 @@
     <section id="secondary_section"></section>
     <span id = "span">
         <div class = "images">
-            <div><image src = "http://www-cdr.stanford.edu/~petrie/blank.gif" id="start" type="button" class="start" onclick="getTweets()"></image></div>
-            <div><image src = "http://www-cdr.stanford.edu/~petrie/blank.gif" id="stop" type="button" class="stop"></image></div>
-            <div><image src = "http://www-cdr.stanford.edu/~petrie/blank.gif" id="back" type="button" class="back" onclick="goToRoot()"></image></div>
+            <div><button src = "http://www-cdr.stanford.edu/~petrie/blank.gif" id="start" type="button" class="start" onclick="getTweets()"></button></div>
+            <div><button src = "http://www-cdr.stanford.edu/~petrie/blank.gif" id="stop" type="button" class="stop"></button></div>
+            <div><button src = "http://www-cdr.stanford.edu/~petrie/blank.gif" id="back" type="button" class="back" onclick="goToRoot()"></button></div>
         </div>
     </span>
+    <input type="text" name="tag" id="tag" placeholder="Inserisci un hastag">
 </body>
  
 <script type="text/javascript">
@@ -304,7 +305,7 @@
         border: 0;
         width: 64px;
         height: 64px;
- 
+ 		opacity: 0;
     }
  
     .images {
