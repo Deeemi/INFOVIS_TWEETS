@@ -1,254 +1,317 @@
 <!DOCTYPE html>
 <html>
-
+ 
 <head>
-	<title>Visual tweet trends</title>
-	<script src="http://d3js.org/d3.v3.min.js"></script>
+    <title>Visual tweet trends</title>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
 </head>
-
+ 
 <body>
-	<section id="chart"></section>
-	<section id="secondary_section"></section>
-	<div><button id="start" type="button" onclick="getTweets()">Listen</button></div>
-	<div><button id="stop" type="button">Stop</button></div>
-	<div><button id="back" type="button" onclick="goToRoot()">Back</button></div>
+    <section id="chart"></section>
+    <section id="secondary_section"></section>
+    <span id = "span">
+        <div class = "images">
+            <div><image src = "http://www-cdr.stanford.edu/~petrie/blank.gif" id="start" type="button" class="start" onclick="getTweets()"></image></div>
+            <div><image src = "http://www-cdr.stanford.edu/~petrie/blank.gif" id="stop" type="button" class="stop"></image></div>
+            <div><image src = "http://www-cdr.stanford.edu/~petrie/blank.gif" id="back" type="button" class="back" onclick="goToRoot()"></image></div>
+        </div>
+    </span>
 </body>
-
+ 
 <script type="text/javascript">
-
-	var map_color = {amazon: '190,100%,85%',gameofthrones: '130,100%,85%',ferrari: '15,100%,85%'}
-	
-	var level = 'root';
-
-	var chart = '';
-
-	var diameter = 600; //massimo diametro e' 600
-
-	var svg = d3.select('#chart').append('svg')
-	   			.attr('width', diameter)
-	   			.attr('height', diameter);
-
-	var bubble = d3.layout.pack()
-	   			   .size([diameter, diameter])
-	   			   .value(function(d) {return d.size;}) //i nuovi dati vengono caricati nel layout a bolla
-	   			   .padding(3); 						//si tiene un piccolo padding intorno alle bolle
-	
-	var div = d3.select("section").append("div")	
-    			.attr("class", "tooltip")				
-    			.style("opacity", 0);
-
-	//funzione per rendere il dizionario del server nel formato richiesto da d3
-	function processData(data,level) {
-
-		data = JSON.parse(data)
-
-	    var newDataSet = [];
-
-	    if(level === 'root') {
-	    	for(var mainhashtag in data) {
-	    		var sum = 0;
-	    		for(var hashtag in data[mainhashtag]) {
-	    			sum += data[mainhashtag][hashtag]
-	    		}
-	    		newDataSet.push({name: mainhashtag, className: mainhashtag, size: sum});
-	    	}
-	    }
-	    else {
-	    	for(var mainhashtag in data) {
-	    		if(mainhashtag === level) {
-	    			for(var hashtag in data[mainhashtag]) {
-	    				newDataSet.push({name: hashtag, className: mainhashtag, size: data[mainhashtag][hashtag]})
-	    			}
-	    		}
-	    	}
-	    }
-
-	    return {children: newDataSet};
-	}
-
-	function goToRoot() {
-		level = 'root';
-		duration = 200;
-		delay = 0;
-		d3.selectAll('circle')
-	 	  .transition()
-		  .duration(duration + delay)
-		  .style('opacity', 0)
-		  .each('end', function() {d3.select(this).remove();})
-	 	d3.selectAll('div.tooltip')
-	 	  .transition()
-		  .duration(0)
-		  .style('opacity', 0);
-		d3.select('#level_name').remove();
-	 	drawBubbles(chart);
-
-	}
-
-	function drawBubbles(chart) {
-
-		var nodes = bubble.nodes(processData(chart,level))
-		   					  .filter(function(d) { return !d.children; });
-
-		var vis = svg.selectAll('circle')
-	   				 .data(nodes, function(d) { return d.name; });
-
-		var duration = 200;
-		var delay = 0;
-
-		// update - questo si applica in fase di aggiornamento di nodi già esistenti
-		vis.transition()
-		   .duration(duration)
-		   .delay(function(d, i) {delay = i * 7; return delay;})
-		   .attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; })
-		   .attr('r', function(d) { return d.r; })
-		   .style('opacity', 1)
-		   .style('fill',function(d){ 
-		   	size = d.size; 
-		   	col = map_color[d.className];
-		   	color = col.split(',');
-		   	if (parseInt(color[2].substring(0, color[2].indexOf('%'))) - size <= 50){
-		   		color[2] = 80
-		   		color = color.toString()
-		   	}else{
-		   		color[2] = parseInt(color[2].substring(0, color[2].indexOf('%'))) - size;
-		   		color = color.toString();
-		   	}
-		   	return 'hsl('+color+'%)';
-		   });
-		
-		// enter - questo si applica ai nuovi nodi in entrata
-		vis.enter().append('circle')
-		   .attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; })
-		   .attr('r', function(d) { return d.r; })
-		   .attr('class', function(d) { return d.className; })
-		   .style('opacity', 0)
-		   .on('mouseover', function(d) { 
-		   		div.transition()		
-                   .duration(0)		
-                   .style("opacity", .9);		
-            	div.html("#"+d.name + "<br/>"  + d.size)	
-                   .style("left", (d3.event.pageX) + "px")		
-                   .style("top", (d3.event.pageY - 28) + "px");	
+ 
+    var map_color = {amazon: '190,100%,85%',gameofthrones: '130,100%,85%',ferrari: '15,100%,85%'}
+   
+    var level = 'root';
+ 
+    var chart = '';
+ 
+    var diameter = 600; //massimo diametro e' 600
+ 
+    var svg = d3.select('#chart').append('svg')
+                .attr('width', diameter)
+                .attr('height', diameter);
+ 
+    var bubble = d3.layout.pack()
+                   .size([diameter, diameter])
+                   .value(function(d) {return d.size;}) //i nuovi dati vengono caricati nel layout a bolla
+                   .padding(3);                         //si tiene un piccolo padding intorno alle bolle
+   
+    var div = d3.select("section").append("div")   
+                .attr("class", "tooltip")              
+                .style("opacity", 0);
+ 
+    //funzione per rendere il dizionario del server nel formato richiesto da d3
+    function processData(data,level) {
+ 
+        data = JSON.parse(data)
+ 
+        var newDataSet = [];
+ 
+        if(level === 'root') {
+            for(var mainhashtag in data) {
+                var sum = 0;
+                for(var hashtag in data[mainhashtag]) {
+                    sum += data[mainhashtag][hashtag]
+                }
+                newDataSet.push({name: mainhashtag, className: mainhashtag, size: sum});
+            }
+        }
+        else {
+            for(var mainhashtag in data) {
+                if(mainhashtag === level) {
+                    for(var hashtag in data[mainhashtag]) {
+                        newDataSet.push({name: hashtag, className: mainhashtag, size: data[mainhashtag][hashtag]})
+                    }
+                }
+            }
+        }
+ 
+        return {children: newDataSet};
+    }
+ 
+    function goToRoot() {
+        level = 'root';
+        duration = 200;
+        delay = 0;
+        d3.select('#back')
+          .transition()
+          .duration(100)
+          .style('opacity', 0);
+        d3.selectAll('circle')
+          .transition()
+          .duration(duration + delay)
+          .style('opacity', 0)
+          .each('end', function() {d3.select(this).remove();})
+        d3.selectAll('div.tooltip')
+          .transition()
+          .duration(0)
+          .style('opacity', 0);
+        drawBubbles(chart);
+ 
+    }
+ 
+    function drawBubbles(chart) {
+ 
+        var nodes = bubble.nodes(processData(chart,level))
+                              .filter(function(d) { return !d.children; });
+ 
+        var vis = svg.selectAll('circle')
+                     .data(nodes, function(d) { return d.name; });
+ 
+        var duration = 200;
+        var delay = 0;
+ 
+        // update - questo si applica in fase di aggiornamento di nodi già esistenti
+        vis.transition()
+           .duration(duration)
+           .delay(function(d, i) {delay = i * 7; return delay;})
+           .attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; })
+           .attr('r', function(d) { return d.r; })
+           .style('opacity', 1)
+           .style('fill',function(d){
+            size = d.size;
+            col = map_color[d.className];
+            color = col.split(',');
+            if (parseInt(color[2].substring(0, color[2].indexOf('%'))) - size <= 50){
+                color[2] = 80
+                color = color.toString()
+            }else{
+                color[2] = parseInt(color[2].substring(0, color[2].indexOf('%'))) - size;
+                color = color.toString();
+            }
+            return 'hsl('+color+'%)';
+           });
+       
+        // enter - questo si applica ai nuovi nodi in entrata
+        vis.enter().append('circle')
+           .attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; })
+           .attr('r', function(d) { return d.r; })
+           .attr('class', function(d) { return d.className; })
+           .style('opacity', 0)
+           .on('mouseover', function(d) {
+                div.transition()       
+                   .duration(0)    
+                   .style("opacity", .9);      
+                div.html("#"+d.name + "<br/>"  + d.size)   
+                   .style("left", (d3.event.pageX) + "px")     
+                   .style("top", (d3.event.pageY - 28) + "px");
             })
-		   .on("mouseout", function(d) {		
-	            div.transition()		
-	                .duration(500)		
-	                .style("opacity", 0);	
-	        })
-		   .on('click', function(d) {
-		   		if(level === 'root'){
-			   		level = d.name; 
-		   		 	d3.selectAll('circle')
-		   		 	  .transition()
-		   			  .duration(duration + delay)
-		   			  .style('opacity', 0)
-		   			  .each('start', function() {d3.select(this).remove();}) //end
-		   		 	d3.selectAll('div.tooltip')
-		   		 	  .transition()
-		   			  .duration(0)
-		   			  .style('opacity', 0);
-		   			d3.select('#secondary_section')
-		   			  .append('text')
-		   			  .attr('id','level_name')
-		   			  .style('color',function() {
-		   			  	color = map_color[d.className];
-		   			  	color = color.split(',');
-		   			  	color[2] = '50%';
-		   			  	return 'hsl('+color.toString()+')';
-		   			  })
-		   			  .text(d.name);
-		   		 	drawBubbles(chart);
-		   		 	
-		   		 }
-		    })
-		   .transition()
-		   .duration(duration * 1.2)
-		   .style('fill',function(d){ 
-		   	size = d.size; 
-		   	col = map_color[d.className];
-		   	color = col.split(',');
-		   	if (parseInt(color[2].substring(0, color[2].indexOf('%'))) - size <= 50){
-		   		color[2] = 80
-		   		color = color.toString()
-		   	}else{
-		   		color[2] = parseInt(color[2].substring(0, color[2].indexOf('%'))) - size;
-		   		color = color.toString();
-		   	}
-		   	return 'hsl('+color+'%)';
-		   })
-		   .style('opacity', 1);
+           .on('mouseout', function(d) {       
+                div.transition()       
+                    .duration(500)     
+                    .style("opacity", 0);  
+            })
+           .on('click', function(d) {
+                if(level === 'root'){
+                    level = d.name;
+                    d3.selectAll('circle')
+                      .transition()
+                      .duration(duration + delay)
+                      .style('opacity', 0)
+                      .each('start', function() {d3.select(this).remove();}) //end
+                    d3.selectAll('div.tooltip')
+                      .transition()
+                      .duration(0)
+                      .style('opacity', 0);
+                    d3.select('#secondary_section')
+                      .append('text')
+                      .attr('id','level_name')
+                      //.style('font-size', '40px')
+                      //.style('text-align', 'right')
+                      //.style('vertical-align', 'top')
+                      .style('color',function() {
+                        color = map_color[d.className];
+                        color = color.split(',');
+                        color[2] = '50%';
+                        return 'hsl('+color.toString()+')';
+                      })
+                      .text('#'+d.name);
 
-		// exit - questo si applica ai nodi che dovranno scomparire
-		vis.exit()
-		   .transition()
-		   .duration(duration + delay)
-		   .style('opacity', 0)
-		   .remove();
-	}
+                    d3.select('#back')
+                      .transition()
+                      .duration(100)
+                      .style('opacity', 1);
+                      
+                    setTimeout(function(){ drawBubbles(chart); }, 2000);
+                   
+                   
+                 }
+            })
+           .transition()
+           .duration(duration * 1.2)
+           .style('fill',function(d){
+            size = d.size;
+            col = map_color[d.className];
+            color = col.split(',');
+            if (parseInt(color[2].substring(0, color[2].indexOf('%'))) - size <= 50){
+                color[2] = 80
+                color = color.toString()
+            }else{
+                color[2] = parseInt(color[2].substring(0, color[2].indexOf('%'))) - size;
+                color = color.toString();
+            }
+            return 'hsl('+color+'%)';
+           })
+           .style('opacity', 1);
+ 
+        // exit - questo si applica ai nodi che dovranno scomparire
+        vis.exit()
+           .transition()
+           .duration(duration + delay)
+           .style('opacity', 0)
+           .remove();
+    }
+ 
+    //funzione principale
+    function getTweets() {
+        document.getElementById("start").disabled = true;
 
-	//funzione principale
-	function getTweets() {
-
-		//connessione al websocket server
-		var connection = new WebSocket('ws://127.0.0.1:9000/ws');
-		var buttonStop = document.getElementById("stop");
-
-		//chiudi la connessione con il server quando si clicca su stop
-		buttonStop.onclick = function() {
-			if (connection.readyState === WebSocket.OPEN) {
-      			connection.close();
-   			}
-		}
-
-		//appena si apre la connessione con il server, il client invia il messaggio Start
-		connection.onopen = function() {
-			connection.send('Start')
-		}
-
-		//visualizzazione su console di eventuali errori
-		connection.onerror = function(error) {
-			console.log('Error: ' + error);
-		}
-
-		//funzione che reagisce ai messaggi che il server invia al client
-		connection.onmessage = function(e) {
-			console.log(e.data)
-			chart = e.data;
-			drawBubbles(chart);
-		}
-
-		//funzione che reagisce alla chiusura della connessione con il server
-		connection.onclose = function() {
-			console.log('connessione chiusa');
-		}
-	}
-
+        //connessione al websocket server
+        var connection = new WebSocket('ws://127.0.0.1:9000/ws');
+        var buttonStop = document.getElementById("stop");
+ 
+        //chiudi la connessione con il server quando si clicca su stop
+        buttonStop.onclick = function() {
+            if (connection.readyState === WebSocket.OPEN) {
+                connection.close();
+            }
+        }
+ 
+        //appena si apre la connessione con il server, il client invia il messaggio Start
+        connection.onopen = function() {
+            connection.send(document.getElementById("tag").value);
+        }
+ 
+        //visualizzazione su console di eventuali errori
+        connection.onerror = function(error) {
+            console.log('Error: ' + error);
+        }
+ 
+        //funzione che reagisce ai messaggi che il server invia al client
+        connection.onmessage = function(e) {
+            console.log(e.data)
+            chart = e.data;
+            drawBubbles(chart);
+        }
+ 
+        //funzione che reagisce alla chiusura della connessione con il server
+        connection.onclose = function() {
+            console.log('connessione chiusa');
+        }
+    }
+ 
 </script>
-
+ 
 <style type="text/css">
-	.gameofthrones {fill: hsl(0, 0%, 0%);}
-	.ferrari {fill: hsl(0, 0%, 0%);}
-
-	div.tooltip {	
-	    position: absolute;			
-	    text-align: center;			
-	    width: 120px;					
-	    height: 28px;					
-	    padding: 2px;				
-	    font: 12px sans-serif;		
-	    background: lightsteelblue;	
-	    border: 0px;		
-	    border-radius: 8px;			
-	    pointer-events: none;			
-	}
-
-	#chart{
-		float: left;
-	}
-
-	#secondary_section{
-		float: right;
-	}
+    .gameofthrones {fill: hsl(0, 0%, 0%);}
+    .ferrari {fill: hsl(0, 0%, 0%);}
+ 
+    @font-face{
+        font-family: 'baloo';
+        src: local('fonts/baloo'),
+            url(Baloo-Regular.ttf);
+ 
+    }
+ 
+    div.tooltip {  
+        position: absolute;        
+        text-align: center;        
+        width: auto;                   
+        height: 28px;                  
+        padding: 2px;              
+        font: 12px sans-serif;     
+        background: lightsteelblue;
+        border: 0px;       
+        border-radius: 8px;        
+        pointer-events: none;          
+    }
+ 
+    #chart{
+        float: left;
+    }
+ 
+    #secondary_section{
+        float: right;
+    }
+ 
+    #level_name{
+        font-size: 60px;
+        vertical-align: top;
+        text-align: right;
+        font-family: baloo;
+    }
+ 
+    .start {
+        background: url('icons/start.png');
+        background-repeat: no-repeat;
+        border: 0;
+        width: 64px;
+        height: 64px;
+    }
+ 
+    .stop {
+        background: url('icons/stop.png');
+        background-repeat: no-repeat;
+        border: 0;
+        width: 64px;
+        height: 64px;
+    }
+ 
+    .back {
+        background: url('icons/up-arrow.png');
+        background-repeat: no-repeat;
+        border: 0;
+        width: 64px;
+        height: 64px;
+ 
+    }
+ 
+    .images {
+        white-space: nowrap;
+    }
+ 
+ 
 </style>
-
+ 
 </html>
