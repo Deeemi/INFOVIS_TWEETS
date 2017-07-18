@@ -13,19 +13,22 @@
         <div class = "images">
             <div><button src = "http://www-cdr.stanford.edu/~petrie/blank.gif" id="start" type="button" class="start" onclick="getTweets()"></button></div>
             <div><button src = "http://www-cdr.stanford.edu/~petrie/blank.gif" id="stop" type="button" class="stop"></button></div>
-            <div><button src = "http://www-cdr.stanford.edu/~petrie/blank.gif" id="back" type="button" class="back" onclick="goToRoot()"></button></div>
+            <div><button src = "http://www-cdr.stanford.edu/~petrie/blank.gif" id="back" type="button" class="back" onclick="goToRoot()" ></button></div>
         </div>
     </span>
-    <input type="text" name="tag" id="tag" placeholder="Inserisci un hastag">
+    <div><input type="text" name="tag" id="tag" placeholder="HashTag..."><button onclick="addTag()">+</button><button onclick="removeTag()">-</button></div>
+    
 </body>
  
 <script type="text/javascript">
  
-    var map_color = {amazon: '190,100%,85%',gameofthrones: '130,100%,85%',ferrari: '15,100%,85%'}
+    var map_color = {}
    
     var level = 'root';
  
     var chart = '';
+
+    var tag_input = 1;
  
     var diameter = 600; //massimo diametro e' 600
  
@@ -41,6 +44,26 @@
     var div = d3.select("section").append("div")   
                 .attr("class", "tooltip")              
                 .style("opacity", 0);
+
+    function removeTag(){
+    	
+    	if(tag_input > 1){
+    		
+    		d3.select('#T'+tag_input).remove()
+    		tag_input = tag_input-1;
+    	}
+    }
+    function addTag(){
+    	
+    	if(tag_input<5){
+    		tag_input= tag_input + 1;
+    		d3.select("body").append('div').append("input").attr("placeholder","Hashtag...").attr("id",'T'+tag_input);
+    	}else{
+    		
+    		console.log("Attenzione massimo 5");
+    	}
+    	
+    }
  
     //funzione per rendere il dizionario del server nel formato richiesto da d3
     function processData(data,level) {
@@ -88,6 +111,7 @@
           .transition()
           .duration(0)
           .style('opacity', 0);
+        d3.select('#level_name').remove()
         drawBubbles(chart);
  
     }
@@ -174,7 +198,7 @@
                       .duration(100)
                       .style('opacity', 1);
                       
-                    setTimeout(function(){ drawBubbles(chart); }, 2000);
+                    setTimeout(function(){ drawBubbles(chart); }, 800);
                    
                    
                  }
@@ -207,6 +231,15 @@
     //funzione principale
     function getTweets() {
         document.getElementById("start").disabled = true;
+        tag1 = document.getElementById("tag").value
+
+
+		colors = ['130,100%,85%','15,100%,85%','320,100%,85%','60,100%,85%']
+
+        map_color[tag1] = '190,100%,85%'
+    	for (i=2;i<=tag_input;i++){
+    		map_color[document.getElementById("T"+i).value] = colors[i-2];
+    	}
 
         //connessione al websocket server
         var connection = new WebSocket('ws://127.0.0.1:9000/ws');
@@ -214,6 +247,8 @@
  
         //chiudi la connessione con il server quando si clicca su stop
         buttonStop.onclick = function() {
+
+        	document.getElementById("start").disabled = false;
             if (connection.readyState === WebSocket.OPEN) {
                 connection.close();
             }
@@ -221,7 +256,13 @@
  
         //appena si apre la connessione con il server, il client invia il messaggio Start
         connection.onopen = function() {
-            connection.send(document.getElementById("tag").value);
+        	message = document.getElementById("tag").value+' ';
+
+        	for (i=2;i<=tag_input;i++){
+        		message+=document.getElementById("T"+i).value+' ';
+        	}
+        	message = message.slice(0, -1);
+            connection.send(message);
         }
  
         //visualizzazione su console di eventuali errori
@@ -245,15 +286,8 @@
 </script>
  
 <style type="text/css">
-    .gameofthrones {fill: hsl(0, 0%, 0%);}
-    .ferrari {fill: hsl(0, 0%, 0%);}
- 
-    @font-face{
-        font-family: 'baloo';
-        src: local('fonts/baloo'),
-            url(Baloo-Regular.ttf);
- 
-    }
+    
+
  
     div.tooltip {  
         position: absolute;        
@@ -280,7 +314,11 @@
         font-size: 60px;
         vertical-align: top;
         text-align: right;
-        font-family: baloo;
+        font-family: fantasy;
+    }
+
+    #tag{
+    	
     }
  
     .start {
@@ -305,8 +343,16 @@
         border: 0;
         width: 64px;
         height: 64px;
- 		opacity: 0;
+        opacity:0;
+ 
     }
+
+	button:disabled,
+	button[disabled]{
+	  border: 1px solid #999999;
+	  background-color: #cccccc;
+	  color: #666666;
+	}
  
     .images {
         white-space: nowrap;
