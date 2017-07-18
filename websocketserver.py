@@ -9,22 +9,25 @@ from tweepy import OAuthHandler, Stream
 class WSHandler(websocket.WebSocketHandler):
 
     def open(self):
-        print ('In ascolto di tweet')
+        print 'In ascolto di tweet'
       
     def on_message(self, message):
-        if message=='Start':           
-            access_token = "479635577-RggBMFaIFh9HkbC5JMwNj1KsnWbaYvJusrzNEYvT"
-            access_token_secret = "RD58EwiM6uxbNnq1cOxDxr06emV0HuimoGDgw40zFPYIX"
-            consumer_key = "gS7DkeN3SlL6DtG4XR3e5rWnb"
-            consumer_secret = "cPCT9xJhQYJh2gRaAqu5K2V7bZERkfv3t2TcZpadswO9sRzoxN"
+        access_token = "479635577-RggBMFaIFh9HkbC5JMwNj1KsnWbaYvJusrzNEYvT"
+        access_token_secret = "RD58EwiM6uxbNnq1cOxDxr06emV0HuimoGDgw40zFPYIX"
+        consumer_key = "gS7DkeN3SlL6DtG4XR3e5rWnb"
+        consumer_secret = "cPCT9xJhQYJh2gRaAqu5K2V7bZERkfv3t2TcZpadswO9sRzoxN"
 
-            auth = OAuthHandler(consumer_key, consumer_secret)
-            auth.set_access_token(access_token, access_token_secret)
-            stream = Stream(auth, TweetsListener(self)) 
-            stream.filter(track=['#gameofthrones','#amazon','#ferrari'],async=True)
+        hashtags = message.split(' ')
+        counts = {}
+        for hashtag in hashtags:
+        	counts[hashtag] = defaultdict(int)
+        auth = OAuthHandler(consumer_key, consumer_secret)
+        auth.set_access_token(access_token, access_token_secret)
+        stream = Stream(auth, TweetsListener(self,counts)) 
+        stream.filter(track=['#'+x for x in hashtags],async=True)
  
     def on_close(self):
-        print ('Connessione chiusa')
+        print 'Connessione chiusa'
  
     def check_origin(self, origin):
         return True
@@ -40,10 +43,9 @@ application = web.Application([
 # Ascoltatore di tweets [on_data, on_error, ws e' il WSHandler]
 class TweetsListener(StreamListener):
 
-    def __init__(self,ws):
+    def __init__(self,ws,counts):
         self.ws = ws
-        self.counts = { 'gameofthrones':defaultdict(int),'amazon':defaultdict(int),'ferrari':defaultdict(int)
-                      }
+        self.counts = counts
 
     def on_data(self, data):
         try:
@@ -52,7 +54,7 @@ class TweetsListener(StreamListener):
             print(hashtags)
             mainhashtag = ''
             for hashtag in hashtags:
-                if hashtag['text'].lower() in ['gameofthrones','amazon','ferrari']:
+                if hashtag['text'].lower() in self.counts.keys():
                     mainhashtag = hashtag['text'].lower()
                     break
             for hashtag in hashtags:
