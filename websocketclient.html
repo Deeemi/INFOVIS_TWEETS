@@ -13,7 +13,7 @@
         <div class = "images">
             <div><button src = "http://www-cdr.stanford.edu/~petrie/blank.gif" id="start" type="button" class="start" onclick="getTweets()"></button></div>
             <div><button src = "http://www-cdr.stanford.edu/~petrie/blank.gif" id="stop" type="button" class="stop"></button></div>
-            <div><button src = "http://www-cdr.stanford.edu/~petrie/blank.gif" id="back" type="button" class="back" onclick="goToRoot()" ></button></div>
+            <div><button src = "http://www-cdr.stanford.edu/~petrie/blank.gif" id="back" type="button" class="back" onclick="goToRoot()"></button></div>
         </div>
     </span>
     <div><input type="text" name="tag" id="tag" placeholder="HashTag..."><button onclick="addTag()">+</button><button onclick="removeTag()">-</button></div>
@@ -21,7 +21,7 @@
 </body>
  
 <script type="text/javascript">
- 
+    
     var map_color = {}
    
     var level = 'root';
@@ -58,11 +58,7 @@
     	if(tag_input<5){
     		tag_input= tag_input + 1;
     		d3.select("body").append('div').append("input").attr("placeholder","Hashtag...").attr("id",'T'+tag_input);
-    	}else{
-    		
-    		console.log("Attenzione massimo 5");
     	}
-    	
     }
  
     //funzione per rendere il dizionario del server nel formato richiesto da d3
@@ -76,7 +72,7 @@
             for(var mainhashtag in data) {
                 var sum = 0;
                 for(var hashtag in data[mainhashtag]) {
-                    sum += data[mainhashtag][hashtag]
+                    sum += data[mainhashtag][hashtag][0];
                 }
                 newDataSet.push({name: mainhashtag, className: mainhashtag, size: sum});
             }
@@ -85,7 +81,7 @@
             for(var mainhashtag in data) {
                 if(mainhashtag === level) {
                     for(var hashtag in data[mainhashtag]) {
-                        newDataSet.push({name: hashtag, className: mainhashtag, size: data[mainhashtag][hashtag]})
+                        newDataSet.push({name: hashtag, className: mainhashtag, size: data[mainhashtag][hashtag][0]})
                     }
                 }
             }
@@ -112,11 +108,11 @@
           .duration(0)
           .style('opacity', 0);
         d3.select('#level_name').remove()
-        drawBubbles(chart);
+        drawBubbles();
  
     }
  
-    function drawBubbles(chart) {
+    function drawBubbles() {
  
         var nodes = bubble.nodes(processData(chart,level))
                               .filter(function(d) { return !d.children; });
@@ -161,6 +157,9 @@
                 div.html("#"+d.name + "<br/>"  + d.size)   
                    .style("left", (d3.event.pageX) + "px")     
                    .style("top", (d3.event.pageY - 28) + "px");
+                if(level != 'root') {
+                  //da fare
+                }
             })
            .on('mouseout', function(d) {       
                 div.transition()       
@@ -182,9 +181,6 @@
                     d3.select('#secondary_section')
                       .append('text')
                       .attr('id','level_name')
-                      //.style('font-size', '40px')
-                      //.style('text-align', 'right')
-                      //.style('vertical-align', 'top')
                       .style('color',function() {
                         color = map_color[d.className];
                         color = color.split(',');
@@ -198,7 +194,7 @@
                       .duration(100)
                       .style('opacity', 1);
                       
-                    setTimeout(function(){ drawBubbles(chart); }, 800);
+                    drawBubbles();
                    
                    
                  }
@@ -230,56 +226,62 @@
  
     //funzione principale
     function getTweets() {
+
+      if(document.getElementById('tag').value=='') {
+        window.alert('Devi inserire almeno un Hashtag');
+      }
+      else {
         document.getElementById("start").disabled = true;
         tag1 = document.getElementById("tag").value
 
 
-		colors = ['130,100%,85%','15,100%,85%','320,100%,85%','60,100%,85%']
+  	    colors = ['130,100%,85%','15,100%,85%','320,100%,85%','60,100%,85%']
 
         map_color[tag1] = '190,100%,85%'
-    	for (i=2;i<=tag_input;i++){
-    		map_color[document.getElementById("T"+i).value] = colors[i-2];
-    	}
 
-        //connessione al websocket server
-        var connection = new WebSocket('ws://127.0.0.1:9000/ws');
-        var buttonStop = document.getElementById("stop");
- 
-        //chiudi la connessione con il server quando si clicca su stop
-        buttonStop.onclick = function() {
+      	for (i=2;i<=tag_input;i++){
+      		map_color[document.getElementById("T"+i).value] = colors[i-2];
+      	}
 
-        	document.getElementById("start").disabled = false;
-            if (connection.readyState === WebSocket.OPEN) {
-                connection.close();
+          //connessione al websocket server
+          var connection = new WebSocket('ws://127.0.0.1:9000/ws');
+          var buttonStop = document.getElementById("stop");
+   
+          //chiudi la connessione con il server quando si clicca su stop
+          buttonStop.onclick = function() {
+
+          	document.getElementById("start").disabled = false;
+              if (connection.readyState === WebSocket.OPEN) {
+                  connection.close();
+              }
+          }
+   
+          //appena si apre la connessione con il server, il client invia il messaggio Start
+          connection.onopen = function() {
+          	message = document.getElementById("tag").value+' ';
+            for (i=2;i<=tag_input;i++){
+              message+=document.getElementById("T"+i).value+' ';
             }
-        }
- 
-        //appena si apre la connessione con il server, il client invia il messaggio Start
-        connection.onopen = function() {
-        	message = document.getElementById("tag").value+' ';
-
-        	for (i=2;i<=tag_input;i++){
-        		message+=document.getElementById("T"+i).value+' ';
-        	}
-        	message = message.slice(0, -1);
+            message = message.slice(0, -1);
             connection.send(message);
-        }
- 
-        //visualizzazione su console di eventuali errori
-        connection.onerror = function(error) {
-            console.log('Error: ' + error);
-        }
- 
-        //funzione che reagisce ai messaggi che il server invia al client
-        connection.onmessage = function(e) {
-            console.log(e.data)
-            chart = e.data;
-            drawBubbles(chart);
-        }
- 
-        //funzione che reagisce alla chiusura della connessione con il server
-        connection.onclose = function() {
-            console.log('connessione chiusa');
+          }
+   
+          //visualizzazione su console di eventuali errori
+          connection.onerror = function(error) {
+              console.log('Error: ' + error);
+          }
+   
+          //funzione che reagisce ai messaggi che il server invia al client
+          connection.onmessage = function(e) {
+              console.log(e.data)
+              chart = e.data;
+              drawBubbles();
+          }
+   
+          //funzione che reagisce alla chiusura della connessione con il server
+          connection.onclose = function() {
+              console.log('connessione chiusa');
+          }
         }
     }
  
@@ -325,24 +327,24 @@
         background: url('icons/start.png');
         background-repeat: no-repeat;
         border: 0;
-        width: 64px;
-        height: 64px;
+        width: 32px;
+        height: 32px;
     }
  
     .stop {
         background: url('icons/stop.png');
         background-repeat: no-repeat;
         border: 0;
-        width: 64px;
-        height: 64px;
+        width: 32px;
+        height: 32px;
     }
  
     .back {
         background: url('icons/up-arrow.png');
         background-repeat: no-repeat;
         border: 0;
-        width: 64px;
-        height: 64px;
+        width: 32px;
+        height: 32px;
         opacity:0;
  
     }
