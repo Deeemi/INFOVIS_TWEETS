@@ -11,13 +11,16 @@
     <section id="secondary_section"></section>
     <span id = "span">
         <div class = "images">
-            <div><button src = "http://www-cdr.stanford.edu/~petrie/blank.gif" id="start" type="button" class="start" onclick="getTweets()"></button></div>
-            <div><button src = "http://www-cdr.stanford.edu/~petrie/blank.gif" id="stop" type="button" class="stop"></button></div>
-            <div><button src = "http://www-cdr.stanford.edu/~petrie/blank.gif" id="back" type="button" class="back" onclick="goToRoot()"></button></div>
+            <div><button id="start" type="button" class="start" onclick="getTweets()"></button></div>
+            <div><button id="stop" type="button" class="stop"></button></div>
+            <div><button id="back" type="button" class="back" onclick="goToRoot()"></button></div>
         </div>
     </span>
-    <div><input type="text" name="tag" id="tag" placeholder="HashTag..."><button onclick="addTag()">+</button><button onclick="removeTag()">-</button></div>
-    
+    <div>
+      <input type="text" name="tag" id="tag" placeholder="HashTag...">
+      <button onclick="addTag()">+</button>
+      <button onclick="removeTag()">-</button>
+    </div>
 </body>
  
 <script type="text/javascript">
@@ -30,33 +33,31 @@
 
     var tag_input = 1;
  
-    var diameter = 600; //massimo diametro e' 600
+    var diameter = 600;
  
     var svg = d3.select('#chart').append('svg')
                 .attr('width', diameter)
                 .attr('height', diameter);
  
     var bubble = d3.layout.pack()
-                   .size([diameter, diameter])
-                   .value(function(d) {return d.size;}) //i nuovi dati vengono caricati nel layout a bolla
-                   .padding(3);                         //si tiene un piccolo padding intorno alle bolle
+                   .size([diameter,diameter])
+                   .value(function(d) { return d.size; }) //i nuovi dati vengono caricati nel layout a bolla
+                   .padding(3);                           //si tiene un piccolo padding intorno alle bolle
    
     var div = d3.select("section").append("div")   
                 .attr("class", "tooltip")              
                 .style("opacity", 0);
 
-    function removeTag(){
-    	
-    	if(tag_input > 1){
-    		
-    		d3.select('#T'+tag_input).remove()
+    function removeTag() {  	
+    	if(tag_input > 1){	
+    		d3.select('#T'+tag_input).remove();
     		tag_input = tag_input-1;
     	}
     }
-    function addTag(){
-    	
-    	if(tag_input<5){
-    		tag_input= tag_input + 1;
+
+    function addTag() {	
+    	if(tag_input<5) {
+    		tag_input = tag_input + 1;
     		d3.select("body").append('div').append("input").attr("placeholder","Hashtag...").attr("id",'T'+tag_input);
     	}
     }
@@ -81,7 +82,7 @@
             for(var mainhashtag in data) {
                 if(mainhashtag === level) {
                     for(var hashtag in data[mainhashtag]) {
-                        newDataSet.push({name: hashtag, className: mainhashtag, size: data[mainhashtag][hashtag][0]})
+                        newDataSet.push({name: hashtag, className: mainhashtag, size: data[mainhashtag][hashtag][0], cotag: data[mainhashtag][hashtag][1]})
                     }
                 }
             }
@@ -102,20 +103,34 @@
           .transition()
           .duration(duration + delay)
           .style('opacity', 0)
-          .each('end', function() {d3.select(this).remove();})
+          .each('end', function() { d3.select(this).remove(); });
         d3.selectAll('div.tooltip')
           .transition()
           .duration(0)
           .style('opacity', 0);
         d3.select('#level_name').remove()
         drawBubbles();
- 
+    }
+
+    function dynamicColor(bubble) {
+        size = bubble.size;
+        col = map_color[bubble.className];
+        color = col.split(',');
+        if (parseInt(color[2].substring(0, color[2].indexOf('%')))-size <= 50) {
+            color[2] = 80;
+            color = color.toString();
+        }
+        else {
+            color[2] = parseInt(color[2].substring(0, color[2].indexOf('%'))) - size;
+            color = color.toString();
+        }
+        return 'hsl('+color+'%)';
     }
  
     function drawBubbles() {
  
         var nodes = bubble.nodes(processData(chart,level))
-                              .filter(function(d) { return !d.children; });
+                          .filter(function(d) { return !d.children; });
  
         var vis = svg.selectAll('circle')
                      .data(nodes, function(d) { return d.name; });
@@ -126,22 +141,12 @@
         // update - questo si applica in fase di aggiornamento di nodi già esistenti
         vis.transition()
            .duration(duration)
-           .delay(function(d, i) {delay = i * 7; return delay;})
+           .delay(function(d, i) { delay = i * 7; return delay; })
            .attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; })
            .attr('r', function(d) { return d.r; })
            .style('opacity', 1)
-           .style('fill',function(d){
-            size = d.size;
-            col = map_color[d.className];
-            color = col.split(',');
-            if (parseInt(color[2].substring(0, color[2].indexOf('%'))) - size <= 50){
-                color[2] = 80
-                color = color.toString()
-            }else{
-                color[2] = parseInt(color[2].substring(0, color[2].indexOf('%'))) - size;
-                color = color.toString();
-            }
-            return 'hsl('+color+'%)';
+           .style('fill', function(d) {
+              return dynamicColor(d);
            });
        
         // enter - questo si applica ai nuovi nodi in entrata
@@ -158,13 +163,22 @@
                    .style("left", (d3.event.pageX) + "px")     
                    .style("top", (d3.event.pageY - 28) + "px");
                 if(level != 'root') {
-                  //da fare
+                  cotaglist = d.cotag;
+                  d3.select(this).style('fill','red');
+                  d3.selectAll('circle').each(function(d) {
+                    if(cotaglist.indexOf(d.name)!=-1) {
+                      d3.select(this).style('fill','red');
+                    }
+                  });
                 }
             })
            .on('mouseout', function(d) {       
                 div.transition()       
                     .duration(500)     
-                    .style("opacity", 0);  
+                    .style("opacity", 0);
+                d3.selectAll('circle').style('fill', function(d) {
+                    return dynamicColor(d);
+                })
             })
            .on('click', function(d) {
                 if(level === 'root'){
@@ -173,7 +187,7 @@
                       .transition()
                       .duration(duration + delay)
                       .style('opacity', 0)
-                      .each('start', function() {d3.select(this).remove();}) //end
+                      .each('start', function() { d3.select(this).remove(); }); //end
                     d3.selectAll('div.tooltip')
                       .transition()
                       .duration(0)
@@ -181,38 +195,24 @@
                     d3.select('#secondary_section')
                       .append('text')
                       .attr('id','level_name')
-                      .style('color',function() {
+                      .style('color', function() {
                         color = map_color[d.className];
                         color = color.split(',');
                         color[2] = '50%';
                         return 'hsl('+color.toString()+')';
                       })
                       .text('#'+d.name);
-
                     d3.select('#back')
                       .transition()
                       .duration(100)
-                      .style('opacity', 1);
-                      
-                    drawBubbles();
-                   
-                   
+                      .style('opacity', 1);       
+                    drawBubbles();       
                  }
             })
            .transition()
            .duration(duration * 1.2)
-           .style('fill',function(d){
-            size = d.size;
-            col = map_color[d.className];
-            color = col.split(',');
-            if (parseInt(color[2].substring(0, color[2].indexOf('%'))) - size <= 50){
-                color[2] = 80
-                color = color.toString()
-            }else{
-                color[2] = parseInt(color[2].substring(0, color[2].indexOf('%'))) - size;
-                color = color.toString();
-            }
-            return 'hsl('+color+'%)';
+           .style('fill', function(d){
+              return dynamicColor(d);
            })
            .style('opacity', 1);
  
@@ -231,66 +231,64 @@
         window.alert('Devi inserire almeno un Hashtag');
       }
       else {
+        
         document.getElementById("start").disabled = true;
-        tag1 = document.getElementById("tag").value
+        
+        tag1 = document.getElementById("tag").value;
 
+  	    colors = ['130,100%,85%','15,100%,85%','320,100%,85%','60,100%,85%'];
 
-  	    colors = ['130,100%,85%','15,100%,85%','320,100%,85%','60,100%,85%']
+        map_color[tag1] = '190,100%,85%';
 
-        map_color[tag1] = '190,100%,85%'
-
-      	for (i=2;i<=tag_input;i++){
+      	for (i=2;i<=tag_input;i++) {
       		map_color[document.getElementById("T"+i).value] = colors[i-2];
       	}
 
-          //connessione al websocket server
-          var connection = new WebSocket('ws://127.0.0.1:9000/ws');
-          var buttonStop = document.getElementById("stop");
+        //connessione al websocket server
+        var connection = new WebSocket('ws://127.0.0.1:9000/ws');
+        var buttonStop = document.getElementById("stop");
    
-          //chiudi la connessione con il server quando si clicca su stop
-          buttonStop.onclick = function() {
-
-          	document.getElementById("start").disabled = false;
-              if (connection.readyState === WebSocket.OPEN) {
-                  connection.close();
-              }
-          }
-   
-          //appena si apre la connessione con il server, il client invia il messaggio Start
-          connection.onopen = function() {
-          	message = document.getElementById("tag").value+' ';
-            for (i=2;i<=tag_input;i++){
-              message+=document.getElementById("T"+i).value+' ';
-            }
-            message = message.slice(0, -1);
-            connection.send(message);
-          }
-   
-          //visualizzazione su console di eventuali errori
-          connection.onerror = function(error) {
-              console.log('Error: ' + error);
-          }
-   
-          //funzione che reagisce ai messaggi che il server invia al client
-          connection.onmessage = function(e) {
-              console.log(e.data)
-              chart = e.data;
-              drawBubbles();
-          }
-   
-          //funzione che reagisce alla chiusura della connessione con il server
-          connection.onclose = function() {
-              console.log('connessione chiusa');
+        //chiudi la connessione con il server quando si clicca su stop
+        buttonStop.onclick = function() {
+        	document.getElementById("start").disabled = false;
+          if (connection.readyState === WebSocket.OPEN) {
+              connection.close();
           }
         }
+   
+        //appena si apre la connessione con il server, il client invia il messaggio Start
+        connection.onopen = function() {
+        	message = document.getElementById("tag").value+' ';
+          for (i=2;i<=tag_input;i++){
+            message += document.getElementById("T"+i).value+' ';
+          }
+          message = message.slice(0,-1);
+          connection.send(message);
+        }
+   
+        //visualizzazione su console di eventuali errori
+        connection.onerror = function(error) {
+            console.log('Error: ' + error);
+        }
+   
+        //funzione che reagisce ai messaggi che il server invia al client
+        connection.onmessage = function(e) {
+            console.log(e.data)
+            chart = e.data;
+            drawBubbles();
+        }
+   
+        //funzione che reagisce alla chiusura della connessione con il server
+        connection.onclose = function() {
+            console.log('connessione chiusa');
+        }
+      }
     }
  
 </script>
  
 <style type="text/css">
     
-
- 
     div.tooltip {  
         position: absolute;        
         text-align: center;        
@@ -317,10 +315,6 @@
         vertical-align: top;
         text-align: right;
         font-family: fantasy;
-    }
-
-    #tag{
-    	
     }
  
     .start {
@@ -349,17 +343,16 @@
  
     }
 
-	button:disabled,
-	button[disabled]{
-	  border: 1px solid #999999;
-	  background-color: #cccccc;
-	  color: #666666;
-	}
+  	button:disabled,
+  	button[disabled]{
+  	  border: 1px solid #999999;
+  	  background-color: #cccccc;
+  	  color: #666666;
+  	}
  
     .images {
         white-space: nowrap;
     }
- 
  
 </style>
  

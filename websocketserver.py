@@ -1,7 +1,7 @@
 import json
 from tornado import httpserver,websocket,ioloop,web
 from tweepy.streaming import StreamListener
-from tweepy import OAuthHandler, Stream
+from tweepy import OAuthHandler,Stream
 
 # ---------------------------------------------------------------------------
 # Handler per il websocket server [open, on_message, on_close, check_origin]
@@ -10,7 +10,7 @@ class WSHandler(websocket.WebSocketHandler):
     def open(self):
         print 'In ascolto di tweet'
       
-    def on_message(self, message):
+    def on_message(self,message):
         access_token = "479635577-RggBMFaIFh9HkbC5JMwNj1KsnWbaYvJusrzNEYvT"
         access_token_secret = "RD58EwiM6uxbNnq1cOxDxr06emV0HuimoGDgw40zFPYIX"
         consumer_key = "gS7DkeN3SlL6DtG4XR3e5rWnb"
@@ -28,7 +28,7 @@ class WSHandler(websocket.WebSocketHandler):
     def on_close(self):
         print 'Connessione chiusa'
  
-    def check_origin(self, origin):
+    def check_origin(self,origin):
         return True
         
 # URI dell'handler
@@ -46,15 +46,18 @@ class TweetsListener(StreamListener):
         self.ws = ws
         self.counts = counts
 
-    def on_data(self, data):
+    def on_data(self,data):
         try:
+            
             msg = json.loads(data)
             hashtags = msg['entities']['hashtags']
             mainhashtag = ''
+
             for hashtag in hashtags:
                 if hashtag['text'].lower() in self.counts.keys():
                     mainhashtag = hashtag['text'].lower()
                     break
+            
             if mainhashtag != '':
                 for hashtag in hashtags:
                     if hashtag['text'].lower() != mainhashtag:
@@ -64,12 +67,14 @@ class TweetsListener(StreamListener):
                             self.counts[mainhashtag][hashtag['text'].lower()] = (tmp_count+1,list(set(tmp_list+[x['text'].lower() for x in hashtags if x['text'].lower()!=hashtag['text'].lower() and x['text'].lower()!=mainhashtag])))
                         else:
                             self.counts[mainhashtag][hashtag['text'].lower()] = (1,list(set([x['text'].lower() for x in hashtags if x['text'].lower()!=hashtag['text'].lower() and x['text'].lower()!=mainhashtag])))
-            self.ws.write_message(self.counts)
+            
+            self.ws.write_message(self.counts)           
             return True
+        
         except BaseException as e:
             return False
 
-    def on_error(self, status):
+    def on_error(self,status):
         print(status)
         return True
 
