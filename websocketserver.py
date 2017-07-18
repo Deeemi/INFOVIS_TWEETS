@@ -11,10 +11,10 @@ class WSHandler(websocket.WebSocketHandler):
         print 'In ascolto di tweet'
       
     def on_message(self,message):
-        access_token = "479635577-RggBMFaIFh9HkbC5JMwNj1KsnWbaYvJusrzNEYvT"
-        access_token_secret = "RD58EwiM6uxbNnq1cOxDxr06emV0HuimoGDgw40zFPYIX"
-        consumer_key = "gS7DkeN3SlL6DtG4XR3e5rWnb"
-        consumer_secret = "cPCT9xJhQYJh2gRaAqu5K2V7bZERkfv3t2TcZpadswO9sRzoxN"
+        access_token = ""
+        access_token_secret = ""
+        consumer_key = ""
+        consumer_secret = ""
 
         hashtags = message.split(' ')
         counts = {}
