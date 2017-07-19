@@ -25,7 +25,9 @@
  
 <script type="text/javascript">
     
-    var map_color = {}
+    var map_color = {};
+
+    var node_red = [];
    
     var level = 'root';
  
@@ -38,16 +40,12 @@
     var svg = d3.select('#chart').append('svg')
                 .attr('width', diameter)
                 .attr('height', diameter);
-
-
  
     var bubble = d3.layout.pack()
                    .size([diameter,diameter])
                    .value(function(d) { return d.size; }) //i nuovi dati vengono caricati nel layout a bolla
                    .padding(3);                           //si tiene un piccolo padding intorno alle bolle
    
-
-
     var div = d3.select("section").append("div")   
                 .attr("class", "tooltip")              
                 .style("opacity", 0);
@@ -132,7 +130,7 @@
         col = map_color[bubble.className];
         color = col.split(',');
         if (parseInt(color[2].substring(0, color[2].indexOf('%')))-size <= 50) {
-            color[2] = 80;
+            color[2] = 50;
             color = color.toString();
         }
         else {
@@ -150,14 +148,12 @@
         var text = svg.selectAll('text')
                       .data(nodes, function(d) { return d.name; });
 
- 
         var vis = svg.selectAll('circle')
                      .data(nodes, function(d) { return d.name; });
  
         var duration = 200;
         var delay = 0;
-        
-       
+           
         // update - questo si applica in fase di aggiornamento di nodi già esistenti
         vis.transition()
            .duration(duration)
@@ -166,35 +162,35 @@
            .attr('r', function(d) { return d.r; })
            .style('opacity', 1)
            .style('fill', function(d) {
-              return dynamicColor(d);
+              if(node_red.indexOf(d.name)!=-1) {
+                return 'red'
+              }
+              else {
+                return dynamicColor(d);
+              }
            });
        
         text.transition()
-            //.duration(0)
-           /*.delay(function(d, i) { delay = i * 7; return delay; })*/
-           .attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; })
-           .attr('text-anchor', 'middle')
-           //.attr('height', '10%')
-           .style("font-size", function(d) {
+            .attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; })
+            .attr('text-anchor', 'middle')
+            .style("font-size", function(d) {
                 console.log(d.r)
                 var len = d.name.substring(0, d.r / 3.5).length;
                 console.log(len)
                 var size = d.r/3.55;
                 if (size>75) size = 75;
                 return Math.round(size)+'px';
-      })
-      .text(function(d) {
-          if (d.r<22){
-            var text = '';
-          }else{
-            var text = d.name.substring(0, d.r / 3.5) + ' ' + d.size;
-          }
-          return text;});
+            })
+            .text(function(d) {
+              if (d.r<22){
+              var text = '';
+            }else{
+              var text = d.name.substring(0, d.r / 3.5) + ' ' + d.size;
+            }
+            return text;
+          });
 
         // enter - questo si applica ai nuovi nodi in entrata
- 
-
-
         vis.enter().append('circle')
            .attr('id', function(d) { return d.name; })
            .attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; })
@@ -211,9 +207,13 @@
                 if(level != 'root') {
                   cotaglist = d.cotag;
                   d3.select(this).style('fill','red');
+                  d3.select('#secondary_section').append('div').attr('class','secondary_section').append('text').text(d.name);
+                  node_red.push(d.name);
                   d3.selectAll('circle').each(function(d) {
                     if(cotaglist.indexOf(d.name)!=-1) {
                       d3.select(this).style('fill','red');
+                      d3.select('#secondary_section').append('div').attr('class','secondary_section').append('text').text(d.name);
+                      node_red.push(d.name);
                     }
                   });
                 }
@@ -222,7 +222,9 @@
                 div.transition()       
                     .duration(500)     
                     .style("opacity", 0);
-                d3.selectAll('circle').style('fill', function(d) {
+                d3.selectAll('div.secondary_section').remove();
+                node_red = [];
+                d3.selectAll('circle').transition().duration(100).style('fill', function(d) {
                     return dynamicColor(d);
                 })
             })
@@ -237,7 +239,7 @@
                         id = d3.select(this).attr('id');
                         d3.select(this).remove();
                         d3.select('#T'+id).remove();
-                       }); //end
+                      });
                     d3.selectAll('div.tooltip')
                       .transition()
                       .duration(0)
@@ -262,7 +264,12 @@
            .transition()
            .duration(duration * 1.2)
            .style('fill', function(d){
-              return dynamicColor(d);
+              if(node_red.indexOf(d.name)!=-1) {
+                return 'red';
+              }
+              else {
+                return dynamicColor(d);
+              }
            })
            .style('opacity', 1);
 
@@ -271,17 +278,12 @@
             .attr('id', function(d) { return 'T'+d.name; })
             .text(function(d){ return d.name })
             .attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; })
-            //.attr('height', '10%')
             .attr('text-anchor', 'middle')
             .style("font-size", function(d) {
                 console.log(d.r)
                 var len = d.name.substring(0, d.r / 3.5).length;
                 var size = d.r/3.55;
                 size *= 10 / len;
-                //size += 1;
-
-                  //d.name = d.name.substring(0, d.name.length-3);
-                  //d.name.concat('...');
                 if (size>75) size = 75;
                 return Math.round(size)+'px';
       })
@@ -291,7 +293,9 @@
           }else{
             var text = d.name.substring(0, d.r / 3.5) + ' ' + d.size;
           }
-          return text;});
+          return text;
+        });
+
         // exit - questo si applica ai nodi che dovranno scomparire
         vis.exit()
            .transition()
