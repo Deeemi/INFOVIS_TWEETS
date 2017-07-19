@@ -38,15 +38,26 @@
     var svg = d3.select('#chart').append('svg')
                 .attr('width', diameter)
                 .attr('height', diameter);
+
+
  
     var bubble = d3.layout.pack()
                    .size([diameter,diameter])
                    .value(function(d) { return d.size; }) //i nuovi dati vengono caricati nel layout a bolla
                    .padding(3);                           //si tiene un piccolo padding intorno alle bolle
    
+
+
     var div = d3.select("section").append("div")   
                 .attr("class", "tooltip")              
                 .style("opacity", 0);
+
+    function getSize(d) {
+      var bbox = this.getBBox(),
+      cbbox = this.parentNode.getBBox(),
+      scale = cbbox.width/bbox.width;
+      d.scale = scale;
+    }
 
     function removeTag() {  	
     	if(tag_input > 1){	
@@ -103,7 +114,11 @@
           .transition()
           .duration(duration + delay)
           .style('opacity', 0)
-          .each('end', function() { d3.select(this).remove(); });
+          .each('start', function() {
+            id = d3.select(this).attr('id');
+            d3.select(this).remove();
+            d3.select('#T'+id).remove();
+          });
         d3.selectAll('div.tooltip')
           .transition()
           .duration(0)
@@ -131,13 +146,18 @@
  
         var nodes = bubble.nodes(processData(chart,level))
                           .filter(function(d) { return !d.children; });
+
+        var text = svg.selectAll('text')
+                      .data(nodes, function(d) { return d.name; });
+
  
         var vis = svg.selectAll('circle')
                      .data(nodes, function(d) { return d.name; });
  
         var duration = 200;
         var delay = 0;
- 
+        
+       
         // update - questo si applica in fase di aggiornamento di nodi già esistenti
         vis.transition()
            .duration(duration)
@@ -149,8 +169,34 @@
               return dynamicColor(d);
            });
        
+        text.transition()
+            //.duration(0)
+           /*.delay(function(d, i) { delay = i * 7; return delay; })*/
+           .attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; })
+           .attr('text-anchor', 'middle')
+           //.attr('height', '10%')
+           .style("font-size", function(d) {
+                console.log(d.r)
+                var len = d.name.substring(0, d.r / 3.5).length;
+                console.log(len)
+                var size = d.r/3.55;
+                if (size>75) size = 75;
+                return Math.round(size)+'px';
+      })
+      .text(function(d) {
+          if (d.r<22){
+            var text = '';
+          }else{
+            var text = d.name.substring(0, d.r / 3.5) + ' ' + d.size;
+          }
+          return text;});
+
         // enter - questo si applica ai nuovi nodi in entrata
+ 
+
+
         vis.enter().append('circle')
+           .attr('id', function(d) { return d.name; })
            .attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; })
            .attr('r', function(d) { return d.r; })
            .attr('class', function(d) { return d.className; })
@@ -187,7 +233,11 @@
                       .transition()
                       .duration(duration + delay)
                       .style('opacity', 0)
-                      .each('start', function() { d3.select(this).remove(); }); //end
+                      .each('start', function() {
+                        id = d3.select(this).attr('id');
+                        d3.select(this).remove();
+                        d3.select('#T'+id).remove();
+                       }); //end
                     d3.selectAll('div.tooltip')
                       .transition()
                       .duration(0)
@@ -215,7 +265,33 @@
               return dynamicColor(d);
            })
            .style('opacity', 1);
- 
+
+        text.enter()
+            .append('text')
+            .attr('id', function(d) { return 'T'+d.name; })
+            .text(function(d){ return d.name })
+            .attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; })
+            //.attr('height', '10%')
+            .attr('text-anchor', 'middle')
+            .style("font-size", function(d) {
+                console.log(d.r)
+                var len = d.name.substring(0, d.r / 3.5).length;
+                var size = d.r/3.55;
+                size *= 10 / len;
+                //size += 1;
+
+                  //d.name = d.name.substring(0, d.name.length-3);
+                  //d.name.concat('...');
+                if (size>75) size = 75;
+                return Math.round(size)+'px';
+      })
+      .text(function(d) {
+          if (d.r<22){
+            var text = '';
+          }else{
+            var text = d.name.substring(0, d.r / 3.5) + ' ' + d.size;
+          }
+          return text;});
         // exit - questo si applica ai nodi che dovranno scomparire
         vis.exit()
            .transition()
@@ -321,24 +397,24 @@
         background: url('icons/start.png');
         background-repeat: no-repeat;
         border: 0;
-        width: 32px;
-        height: 32px;
+        width: 64px;
+        height: 64px;
     }
  
     .stop {
         background: url('icons/stop.png');
         background-repeat: no-repeat;
         border: 0;
-        width: 32px;
-        height: 32px;
+        width: 64px;
+        height: 64px;
     }
  
     .back {
         background: url('icons/up-arrow.png');
         background-repeat: no-repeat;
         border: 0;
-        width: 32px;
-        height: 32px;
+        width: 64px;
+        height: 64px;
         opacity:0;
  
     }
