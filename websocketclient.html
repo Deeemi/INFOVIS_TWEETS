@@ -17,7 +17,7 @@
         </div>
     </span>
     <div>
-      <input type="text" name="tag" id="tag" placeholder="HashTag...">
+      <input type="text" class="inputtag" name="tag" id="tag" placeholder="#Hashtag...">
       <button onclick="addTag()">+</button>
       <button onclick="removeTag()">-</button>
     </div>
@@ -45,10 +45,6 @@
                    .size([diameter,diameter])
                    .value(function(d) { return d.size; }) //i nuovi dati vengono caricati nel layout a bolla
                    .padding(3);                           //si tiene un piccolo padding intorno alle bolle
-   
-    var div = d3.select("section").append("div")   
-                .attr("class", "tooltip")              
-                .style("opacity", 0);
 
     function removeTag() {  	
     	if(tag_input > 1){	
@@ -60,7 +56,7 @@
     function addTag() {	
     	if(tag_input<5) {
     		tag_input = tag_input + 1;
-    		d3.select("body").append('div').append("input").attr("placeholder","Hashtag...").attr("id",'T'+tag_input);
+    		d3.select("body").append('div').append("input").attr("placeholder","#Hashtag...").attr('class','inputtag').attr("id",'T'+tag_input);
     	}
     }
  
@@ -73,18 +69,16 @@
  
         if(level === 'root') {
             for(var mainhashtag in data) {
-                var sum = 0;
-                for(var hashtag in data[mainhashtag]) {
-                    sum += data[mainhashtag][hashtag][0];
-                }
-                newDataSet.push({name: mainhashtag, className: mainhashtag, size: sum});
+                newDataSet.push({name: mainhashtag, className: mainhashtag, size: data[mainhashtag]['Tweets_Counter']});
             }
         }
         else {
             for(var mainhashtag in data) {
                 if(mainhashtag === level) {
                     for(var hashtag in data[mainhashtag]) {
-                        newDataSet.push({name: hashtag, className: mainhashtag, size: data[mainhashtag][hashtag][0], cotag: data[mainhashtag][hashtag][1]})
+                        if(hashtag!='Tweets_Counter') {
+                            newDataSet.push({name: hashtag, className: mainhashtag, size: data[mainhashtag][hashtag][0], cotag: data[mainhashtag][hashtag][1]})
+                        }
                     }
                 }
             }
@@ -110,10 +104,6 @@
             d3.select(this).remove();
             d3.select('#T'+id).remove();
           });
-        d3.selectAll('div.tooltip')
-          .transition()
-          .duration(0)
-          .style('opacity', 0);
         d3.select('#level_name').remove()
         drawBubbles();
     }
@@ -180,7 +170,7 @@
               if (d.r<22){
               var text = '';
             }else{
-              var text = d.name.substring(0, d.r / 4) + ' ' + d.size;
+              var text = d.name.substring(0, d.r / 4) + ' [' + d.size + ']';
             }
             return text;
           });
@@ -193,30 +183,21 @@
            .attr('class', function(d) { return d.className; })
            .style('opacity', 0)
            .on('mouseover', function(d) {
-                div.transition()       
-                   .duration(0)    
-                   .style("opacity", .9);      
-                div.html("#"+d.name + "<br/>"  + d.size)   
-                   .style("left", (d3.event.pageX) + "px")     
-                   .style("top", (d3.event.pageY - 28) + "px");
                 if(level != 'root') {
-                  cotaglist = d.cotag;
+                  cotagcounts = d.cotag;
                   d3.select(this).style('fill','red');
-                  d3.select('#secondary_section').append('div').attr('class','secondary_section').append('text').text(d.name);
+                  d3.select('#secondary_section').append('div').attr('class','secondary_section').append('text').attr('style','color: red; font-size: 35px;').text('#'+d.name);
                   node_red.push(d.name);
                   d3.selectAll('circle').each(function(d) {
-                    if(cotaglist.indexOf(d.name)!=-1) {
+                    if(Object.keys(cotagcounts).indexOf(d.name)!=-1) {
                       d3.select(this).style('fill','red');
-                      d3.select('#secondary_section').append('div').attr('class','secondary_section').append('text').text(d.name);
+                      d3.select('#secondary_section').append('div').attr('class','secondary_section').append('text').style('font-size','20px').text('#'+d.name+' ['+cotagcounts[d.name]+']');
                       node_red.push(d.name);
                     }
                   });
                 }
             })
            .on('mouseout', function(d) {       
-                div.transition()       
-                    .duration(500)     
-                    .style("opacity", 0);
                 d3.selectAll('div.secondary_section').remove();
                 node_red = [];
                 d3.selectAll('circle').transition().duration(100).style('fill', function(d) {
@@ -235,10 +216,6 @@
                         d3.select(this).remove();
                         d3.select('#T'+id).remove();
                       });
-                    d3.selectAll('div.tooltip')
-                      .transition()
-                      .duration(0)
-                      .style('opacity', 0);
                     d3.select('#secondary_section')
                       .append('text')
                       .attr('id','level_name')
@@ -279,7 +256,7 @@
           if (d.r<22){
             var text = '';
           }else{
-            var text = d.name.substring(0, d.r / 4) + ' ' + d.size;
+            var text = d.name.substring(0, d.r / 4) + ' [' + d.size + ']';
           }
           return text;
         });
@@ -295,21 +272,39 @@
     //funzione principale
     function getTweets() {
 
+      d3.selectAll('text').remove();
+      d3.selectAll('circle').remove();
+
+      tags = d3.selectAll('input.inputtag');
+      wrong_tag = false;
+      for(i=0;i<tags[0].length;i++) {
+        if(tags[0][i].value.charAt(0)!='#') {
+          wrong_tag = true;
+          break;
+        }
+      }
+      
       if(document.getElementById('tag').value=='') {
-        window.alert('Devi inserire almeno un Hashtag');
+        window.alert('Devi inserire almeno un Hashtag!');
+      }
+      else if(wrong_tag) {
+        window.alert('Non tutti gli hashtag hanno il #!')
       }
       else {
         
         document.getElementById("start").disabled = true;
         
         tag1 = document.getElementById("tag").value;
+        tag1 = tag1.replace('#','');
 
-  	    colors = ['130,100%,85%','15,100%,85%','320,100%,85%','60,100%,85%'];
+  	    colors = ['130,100%,85%','27,100%,85%','320,100%,85%','60,100%,85%'];
 
         map_color[tag1] = '190,100%,85%';
 
       	for (i=2;i<=tag_input;i++) {
-      		map_color[document.getElementById("T"+i).value] = colors[i-2];
+          tagi = document.getElementById("T"+i).value;
+          tagi = tagi.replace('#','');
+      		map_color[tagi] = colors[i-2];
       	}
 
         //connessione al websocket server
@@ -341,7 +336,7 @@
    
         //funzione che reagisce ai messaggi che il server invia al client
         connection.onmessage = function(e) {
-            console.log(e.data)
+            //console.log(e.data)
             chart = e.data;
             drawBubbles();
         }
@@ -357,19 +352,6 @@
  
 <style type="text/css">
     
-    div.tooltip {  
-        position: absolute;        
-        text-align: center;        
-        width: auto;                   
-        height: 28px;                  
-        padding: 2px;              
-        font: 12px sans-serif;     
-        background: lightsteelblue;
-        border: 0px;       
-        border-radius: 8px;        
-        pointer-events: none;          
-    }
- 
     #chart{
         float: left;
     }
@@ -389,24 +371,24 @@
         background: url('icons/start.png');
         background-repeat: no-repeat;
         border: 0;
-        width: 64px;
-        height: 64px;
+        width: 32px;
+        height: 32px;
     }
  
     .stop {
         background: url('icons/stop.png');
         background-repeat: no-repeat;
         border: 0;
-        width: 64px;
-        height: 64px;
+        width: 32px;
+        height: 32px;
     }
  
     .back {
         background: url('icons/up-arrow.png');
         background-repeat: no-repeat;
         border: 0;
-        width: 64px;
-        height: 64px;
+        width: 32px;
+        height: 32px;
         opacity:0;
  
     }
