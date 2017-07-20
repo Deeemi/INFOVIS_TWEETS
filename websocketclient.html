@@ -50,13 +50,6 @@
                 .attr("class", "tooltip")              
                 .style("opacity", 0);
 
-    function getSize(d) {
-      var bbox = this.getBBox(),
-      cbbox = this.parentNode.getBBox(),
-      scale = cbbox.width/bbox.width;
-      d.scale = scale;
-    }
-
     function removeTag() {  	
     	if(tag_input > 1){	
     		d3.select('#T'+tag_input).remove();
@@ -125,6 +118,13 @@
         drawBubbles();
     }
 
+    function resize(text){
+      var len = text.name.substring(0, text.r / 4).length;
+      var size = text.r/4;
+      if (size>75) size = 75;
+      return Math.round(size)+'px';
+    }
+
     function dynamicColor(bubble) {
         size = bubble.size;
         col = map_color[bubble.className];
@@ -146,6 +146,7 @@
                           .filter(function(d) { return !d.children; });
 
         var text = svg.selectAll('text')
+                      .attr("text-anchor", "middle")
                       .data(nodes, function(d) { return d.name; });
 
         var vis = svg.selectAll('circle')
@@ -171,21 +172,15 @@
            });
        
         text.transition()
+            .duration(duration + 30)
             .attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; })
-            .attr('text-anchor', 'middle')
-            .style("font-size", function(d) {
-                console.log(d.r)
-                var len = d.name.substring(0, d.r / 3.5).length;
-                console.log(len)
-                var size = d.r/3.55;
-                if (size>75) size = 75;
-                return Math.round(size)+'px';
-            })
+            .style("font-size", function(d) {return resize(d);})
+            .attr("text-anchor", "middle")
             .text(function(d) {
               if (d.r<22){
               var text = '';
             }else{
-              var text = d.name.substring(0, d.r / 3.5) + ' ' + d.size;
+              var text = d.name.substring(0, d.r / 4) + ' ' + d.size;
             }
             return text;
           });
@@ -278,20 +273,13 @@
             .attr('id', function(d) { return 'T'+d.name; })
             .text(function(d){ return d.name })
             .attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; })
-            .attr('text-anchor', 'middle')
-            .style("font-size", function(d) {
-                console.log(d.r)
-                var len = d.name.substring(0, d.r / 3.5).length;
-                var size = d.r/3.55;
-                size *= 10 / len;
-                if (size>75) size = 75;
-                return Math.round(size)+'px';
-      })
-      .text(function(d) {
+            .attr("text-anchor", "middle")
+            .style("font-size", function(d) {return resize(d);})
+            .text(function(d) {
           if (d.r<22){
             var text = '';
           }else{
-            var text = d.name.substring(0, d.r / 3.5) + ' ' + d.size;
+            var text = d.name.substring(0, d.r / 4) + ' ' + d.size;
           }
           return text;
         });
