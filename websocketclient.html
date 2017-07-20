@@ -7,19 +7,21 @@
 </head>
  
 <body>
-    <section id="chart"></section>
-    <section id="secondary_section"></section>
     <span id = "span">
-        <div class = "images">
-            <div><button id="start" type="button" class="start" onclick="getTweets()"></button></div>
-            <div><button id="stop" type="button" class="stop"></button></div>
-            <div><button id="back" type="button" class="back" onclick="goToRoot()"></button></div>
+        <div class="buttons_interface" id="span_div">
+            <div class="buttons_interface"><button id="start" type="button" class="start" onclick="getTweets()"></button></div>
+            <div class="buttons_interface"><button id="stop" type="button" class="stop"></button></div>
+            <div class="buttons_interface"><button id="back" type="button" class="back" onclick="goToRoot()"></button></div>
+            <div class="buttons_interface"><input type="text" class="inputtag" name="tag" id="tag" placeholder="#Hashtag..."></div>
+        </div>
+        <div class="buttons_interface">
+            <button class="buttonTag" style="background: url('icons/add.png');" onclick="addTag()"></button>
+            <button class="buttonTag" style="background: url('icons/minus.png');" onclick="removeTag()"></button>
         </div>
     </span>
-    <div>
-      <input type="text" class="inputtag" name="tag" id="tag" placeholder="#Hashtag...">
-      <button onclick="addTag()">+</button>
-      <button onclick="removeTag()">-</button>
+    <div style="margin-top: 20px">
+        <section id="chart"></section>
+        <section id="secondary_section"></section>
     </div>
 </body>
  
@@ -34,21 +36,25 @@
     var chart = '';
 
     var tag_input = 1;
- 
-    var diameter = 600;
+
+    var max_cotag = 0;
+
+    var dia_width = 930;
+    var dia_height = 570;
  
     var svg = d3.select('#chart').append('svg')
-                .attr('width', diameter)
-                .attr('height', diameter);
+                .attr('width', dia_width)
+                .attr('height', dia_height);
  
     var bubble = d3.layout.pack()
-                   .size([diameter,diameter])
+                   .size([dia_width,dia_height])
                    .value(function(d) { return d.size; }) //i nuovi dati vengono caricati nel layout a bolla
                    .padding(3);                           //si tiene un piccolo padding intorno alle bolle
 
     function removeTag() {  	
     	if(tag_input > 1){	
     		d3.select('#T'+tag_input).remove();
+        d3.select('#D'+tag_input).remove();
     		tag_input = tag_input-1;
     	}
     }
@@ -56,7 +62,7 @@
     function addTag() {	
     	if(tag_input<5) {
     		tag_input = tag_input + 1;
-    		d3.select("body").append('div').append("input").attr("placeholder","#Hashtag...").attr('class','inputtag').attr("id",'T'+tag_input);
+    		d3.select("body").select('#span_div').append('div').attr('class','divs_interface').attr('id','D'+tag_input).append("input").attr('type','text').attr("placeholder","#Hashtag...").attr('class','inputtag').attr("id",'T'+tag_input);
     	}
     }
  
@@ -91,6 +97,7 @@
         level = 'root';
         duration = 200;
         delay = 0;
+        d3.selectAll('input').attr('disabled',null);
         d3.select('#back')
           .transition()
           .duration(100)
@@ -186,12 +193,13 @@
                 if(level != 'root') {
                   cotagcounts = d.cotag;
                   d3.select(this).style('fill','red');
-                  d3.select('#secondary_section').append('div').attr('class','secondary_section').append('text').attr('style','color: red; font-size: 35px;').text('#'+d.name);
+                  d3.select('#secondary_section').append('div').attr('class','secondary_section').append('text').attr('style','color: red; font-size: 35px; margin-left: 10px; margin-bottom: 10px;').text('#'+d.name);
                   node_red.push(d.name);
                   d3.selectAll('circle').each(function(d) {
-                    if(Object.keys(cotagcounts).indexOf(d.name)!=-1) {
+                    if(Object.keys(cotagcounts).indexOf(d.name)!=-1 && max_cotag<16) {
                       d3.select(this).style('fill','red');
-                      d3.select('#secondary_section').append('div').attr('class','secondary_section').append('text').style('font-size','20px').text('#'+d.name+' ['+cotagcounts[d.name]+']');
+                      d3.select('#secondary_section').append('div').attr('class','secondary_section').append('text').style('font-size','20px').style('margin-left','15px').text('#'+d.name+' ['+cotagcounts[d.name]+']');
+                      max_cotag++;
                       node_red.push(d.name);
                     }
                   });
@@ -200,6 +208,7 @@
            .on('mouseout', function(d) {       
                 d3.selectAll('div.secondary_section').remove();
                 node_red = [];
+                max_cotag = 0;
                 d3.selectAll('circle').transition().duration(100).style('fill', function(d) {
                     return dynamicColor(d);
                 })
@@ -207,6 +216,7 @@
            .on('click', function(d) {
                 if(level === 'root'){
                     level = d.name;
+                    d3.selectAll('input').attr('disabled','true');
                     d3.selectAll('circle')
                       .transition()
                       .duration(duration + delay)
@@ -284,7 +294,10 @@
         }
       }
       
-      if(document.getElementById('tag').value=='') {
+      if(level!='root') {
+        window.alert('Prima di ascoltare nuovi tweet torna alla pagina principale!');
+      }
+      else if(document.getElementById('tag').value=='') {
         window.alert('Devi inserire almeno un Hashtag!');
       }
       else if(wrong_tag) {
@@ -293,6 +306,7 @@
       else {
         
         document.getElementById("start").disabled = true;
+        document.getElementById("stop").disabled = false;
         
         tag1 = document.getElementById("tag").value;
         tag1 = tag1.replace('#','');
@@ -313,7 +327,7 @@
    
         //chiudi la connessione con il server quando si clicca su stop
         buttonStop.onclick = function() {
-        	document.getElementById("start").disabled = false;
+          document.getElementById('start').disabled = false;
           if (connection.readyState === WebSocket.OPEN) {
               connection.close();
           }
@@ -352,21 +366,66 @@
  
 <style type="text/css">
     
-    #chart{
+    #span {
+      display: inline;
+    }
+
+    #chart {
         float: left;
+        border-style: groove;
+        border-color: #ADD8E6;
     }
  
     #secondary_section{
         float: right;
+        width: 390px;
+        height: 574px;
+        border-style: groove;
+        border-color: #ADD8E6;
     }
  
     #level_name{
-        font-size: 60px;
+        font-size: 40px;
         vertical-align: top;
         text-align: right;
         font-family: fantasy;
+        margin-left: 5px;
     }
- 
+
+    .buttons_interface {
+      margin-right: 6px;
+      margin-left: 1px;
+      display: inline;
+    }
+
+    .divs_interface {
+      margin-right: 6px;
+      margin-left: 1px;
+      display: inline;
+    }
+
+    input[type='text'] {
+      border: none;
+      border-bottom: solid 2px #C9C9C9;
+      transition: border 0.3s;
+    }
+
+    input[type='text'].focus {
+      border-bottom: solid 2px #969696;
+    }
+
+    button {
+      border-radius: 8px;
+    }
+
+    .buttonTag {
+      border-radius: 0px;
+      background-repeat: no-repeat;
+      border: 0;
+      width: 16px;
+      height: 16px;
+    }
+
     .start {
         background: url('icons/start.png');
         background-repeat: no-repeat;
@@ -396,14 +455,10 @@
   	button:disabled,
   	button[disabled]{
   	  border: 1px solid #999999;
-  	  background-color: #cccccc;
+  	  background-color: #CCCCCC;
   	  color: #666666;
   	}
- 
-    .images {
-        white-space: nowrap;
-    }
- 
+  
 </style>
  
 </html>
