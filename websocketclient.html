@@ -11,12 +11,13 @@
         <div class="buttons_interface" id="span_div">
             <div class="buttons_interface"><button id="start" type="button" class="start" onclick="getTweets()"></button></div>
             <div class="buttons_interface"><button id="stop" type="button" class="stop"></button></div>
-            <div class="buttons_interface"><button id="back" type="button" class="back" onclick="goToRoot()"></button></div>
+            <div class="buttons_interface"><button id="back" type="button" class="back" onclick="goToRoot()" disabled="true"></button></div>
             <div class="buttons_interface"><input type="text" class="inputtag" name="tag" id="tag" placeholder="#Hashtag..."></div>
         </div>
         <div class="buttons_interface">
             <button class="buttonTag" style="background: url('icons/add.png');" onclick="addTag()"></button>
             <button class="buttonTag" style="background: url('icons/minus.png');" onclick="removeTag()"></button>
+            <div id="status" style="float: right;font-family: fantasy;font-size: 30px" >In attesa...</div>
         </div>
     </span>
     <div style="margin-top: 20px">
@@ -39,6 +40,8 @@
 
     var max_cotag = 0;
 
+    var global_counter = 0;
+
     var dia_width = 930;
     var dia_height = 570;
  
@@ -50,6 +53,11 @@
                    .size([dia_width,dia_height])
                    .value(function(d) { return d.size; }) //i nuovi dati vengono caricati nel layout a bolla
                    .padding(3);                           //si tiene un piccolo padding intorno alle bolle
+
+    var secondary_section = d3.select('#secondary_section').append('div').attr('id','div_sec_section').style('margin-top','40px');
+    secondary_section.append('img').attr('src','icons/tweet-snooper.png').style('margin-left','67px').style('margin-top','20px');
+    secondary_section.append('div').append('text').text('Tweet ascoltati').style('font-size','30px').style('font-family','fantasy').style('margin-left','104.845px');
+    secondary_section.append('div').style('text-align','center').append('text').attr('id','global_counter').text(global_counter).style('font-size','110px').style('font-family','fantasy');
 
     function removeTag() {  	
     	if(tag_input > 1){	
@@ -72,11 +80,15 @@
         data = JSON.parse(data)
  
         var newDataSet = [];
- 
+        
+        global_counter = 0;
+
         if(level === 'root') {
             for(var mainhashtag in data) {
+                global_counter += data[mainhashtag]['Tweets_Counter'];
                 newDataSet.push({name: mainhashtag, className: mainhashtag, size: data[mainhashtag]['Tweets_Counter']});
             }
+            d3.select('#global_counter').text(global_counter);
         }
         else {
             for(var mainhashtag in data) {
@@ -97,7 +109,12 @@
         level = 'root';
         duration = 200;
         delay = 0;
+        d3.select('#back').attr('disabled','true');
         d3.selectAll('input').attr('disabled',null);
+        secondary_section = d3.select('#secondary_section').append('div').attr('id','div_sec_section').style('margin-top','40px');
+        secondary_section.append('img').attr('src','icons/tweet-snooper.png').style('margin-left','67px').style('margin-top','20px');
+        secondary_section.append('div').append('text').text('Tweet ascoltati').style('font-size','30px').style('font-family','fantasy').style('margin-left','104.845px');
+        secondary_section.append('div').style('text-align','center').append('text').attr('id','global_counter').text(global_counter).style('font-size','110px').style('font-family','fantasy');
         d3.select('#back')
           .transition()
           .duration(100)
@@ -191,15 +208,35 @@
            .style('opacity', 0)
            .on('mouseover', function(d) {
                 if(level != 'root') {
+
                   cotagcounts = d.cotag;
+
+                  cotagcounts_tmp = cotagcounts;
+
+                  cotagcounts = Object.keys(cotagcounts).map(function(key){
+                    return [key,cotagcounts[key]];
+                  });
+
+                  cotagcounts.sort(function(first,second){
+                    return second[1]-first[1];
+                  });
+
                   d3.select(this).style('fill','red');
                   d3.select('#secondary_section').append('div').attr('class','secondary_section').append('text').attr('style','color: red; font-size: 35px; margin-left: 10px; margin-bottom: 10px;').text('#'+d.name);
                   node_red.push(d.name);
+
+                  for(i=0;i<cotagcounts.length;i++) {
+                      if(max_cotag<16) {
+                          d3.select('#secondary_section').append('div').attr('class','secondary_section').append('text').style('font-size','20px').style('margin-left','15px').text('#'+cotagcounts[i][0]+' ['+cotagcounts[i][1]+']');
+                          max_cotag++;
+                      }
+                  }
+
+                  cotagcounts = cotagcounts_tmp;
+
                   d3.selectAll('circle').each(function(d) {
-                    if(Object.keys(cotagcounts).indexOf(d.name)!=-1 && max_cotag<16) {
+                    if(Object.keys(cotagcounts).indexOf(d.name)!=-1) {
                       d3.select(this).style('fill','red');
-                      d3.select('#secondary_section').append('div').attr('class','secondary_section').append('text').style('font-size','20px').style('margin-left','15px').text('#'+d.name+' ['+cotagcounts[d.name]+']');
-                      max_cotag++;
                       node_red.push(d.name);
                     }
                   });
@@ -215,6 +252,8 @@
             })
            .on('click', function(d) {
                 if(level === 'root'){
+                    d3.select('#back').attr('disabled',null);
+                    d3.select('#div_sec_section').remove();
                     level = d.name;
                     d3.selectAll('input').attr('disabled','true');
                     d3.selectAll('circle')
@@ -283,6 +322,11 @@
     function getTweets() {
 
       d3.selectAll('text').remove();
+      d3.select('#div_sec_section').remove();
+      secondary_section = d3.select('#secondary_section').append('div').attr('id','div_sec_section').style('margin-top','40px');
+      secondary_section.append('img').attr('src','icons/tweet-snooper.png').style('margin-left','67px').style('margin-top','20px');
+      secondary_section.append('div').append('text').text('Tweet ascoltati').style('font-size','30px').style('font-family','fantasy').style('margin-left','104.845px');
+      secondary_section.append('div').style('text-align','center').append('text').attr('id','global_counter').text('0').style('font-size','110px').style('font-family','fantasy');
       d3.selectAll('circle').remove();
 
       tags = d3.selectAll('input.inputtag');
@@ -304,14 +348,14 @@
         window.alert('Non tutti gli hashtag hanno il #!')
       }
       else {
-        
+        d3.select('#status').text('In ascolto...');
         document.getElementById("start").disabled = true;
         document.getElementById("stop").disabled = false;
         
         tag1 = document.getElementById("tag").value;
         tag1 = tag1.replace('#','');
 
-  	    colors = ['130,100%,85%','27,100%,85%','320,100%,85%','60,100%,85%'];
+  	    colors = ['130,100%,85%','27,100%,85%','320,100%,85%','225,100%,85%'];
 
         map_color[tag1] = '190,100%,85%';
 
@@ -357,7 +401,7 @@
    
         //funzione che reagisce alla chiusura della connessione con il server
         connection.onclose = function() {
-            console.log('connessione chiusa');
+            d3.select('#status').text('Ascolto terminato');
         }
       }
     }
@@ -416,6 +460,8 @@
 
     button {
       border-radius: 8px;
+      cursor: pointer;
+      cursor: hand;
     }
 
     .buttonTag {
@@ -457,6 +503,7 @@
   	  border: 1px solid #999999;
   	  background-color: #CCCCCC;
   	  color: #666666;
+      cursor: default;
   	}
   
 </style>
